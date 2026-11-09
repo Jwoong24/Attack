@@ -344,7 +344,7 @@ html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
       <div class="opt"><label>시간대</label><div class="seg" data-opt="tod"><button data-v="0" aria-pressed="true">정오</button><button data-v="1" aria-pressed="false">노을</button><button data-v="2" aria-pressed="false">흐림</button><button data-v="3" aria-pressed="false">밤</button></div></div>
       <div class="opt"><label>소리</label><div class="seg" data-opt="snd"><button data-v="on" aria-pressed="true">켬</button><button data-v="off" aria-pressed="false">끔</button></div></div>
     </div>
-    <div id="loadChar"><label class="pick" for="glbIn" id="glbLbl">내 캐릭터 불러오기 (.glb)</label><input type="file" id="glbIn" hidden><button type="button" class="reset" id="glbReset" hidden>기본 캐릭터로</button><small id="glbMsg">GLB/GLTF 파일을 고르면 주인공 모습이 바뀌고, 다음 접속에도 기억해요. (PC·모바일 모두 파일 선택으로 불러와요)</small></div>
+    <p id="glbMsg" class="note" style="margin:6px 0 0"></p>
     <p class="note">PC와 모바일을 모두 지원해요. 모바일은 가로 화면을 추천해요. 캐릭터는 임시 신병 모델이고, 코드의 <span class="mono">CHARACTERS</span> 목록으로 교체할 수 있어요. 거인 같은 공격 대상은 <span class="mono">SIM.registerTarget()</span>으로 등록하면 돼요.</p>
   </div>
 </section>
@@ -1304,22 +1304,20 @@ function glbAnim(dt,hs,air){
   if(want&&want!==GLBC.cur){want.reset().fadeIn(.2).play();if(GLBC.cur)GLBC.cur.fadeOut(.2);GLBC.cur=want}
   GLBC.mixer.update(dt);
 }
-const glbDB={open(){return new Promise((res,rej)=>{try{const r=indexedDB.open('wmt-char',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},
-  async put(buf){try{const d=await this.open();d.transaction('f','readwrite').objectStore('f').put(buf,'glb')}catch(e){}},
-  async get(){try{const d=await this.open();return await new Promise(res=>{const q=d.transaction('f').objectStore('f').get('glb');q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)})}catch(e){return null}},
-  async del(){try{const d=await this.open();d.transaction('f','readwrite').objectStore('f').delete('glb')}catch(e){}}};
-function glbLoad(buf,name,save){
-  if(!THREE.GLTFLoader){glbMsg('GLB 로더를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.',true);return}
-  glbMsg('불러오는 중… '+(name||''));
-  try{new THREE.GLTFLoader().parse(buf,'',g=>{try{glbApply(g);glbMsg('적용했어요: '+(name||'캐릭터')+(g.animations&&g.animations.length?' · 애니메이션 '+g.animations.length+'개':' · 정지 포즈로 따라다녀요'));document.getElementById('glbReset').hidden=false;if(save)glbDB.put(buf)}catch(e){glbClear();glbMsg('모델을 적용하지 못했어요. 다른 GLB 파일로 시도해 주세요.',true)}},err=>glbMsg('파일을 읽지 못했어요. .glb(바이너리) 또는 외부 파일이 없는 .gltf만 가능해요.',true))}
-  catch(e){glbMsg('파일을 읽지 못했어요.',true)}
+const GLB_NAME='01.ErenYeager.glb';
+function glbLoad(buf,name){
+  if(!THREE.GLTFLoader){glbMsg('기본 캐릭터로 시작해요');return}
+  try{new THREE.GLTFLoader().parse(buf,'',g=>{try{glbApply(g);glbMsg('주인공 모델 적용: '+name)}catch(e){glbClear();glbMsg('기본 캐릭터로 시작해요')}},()=>glbMsg('기본 캐릭터로 시작해요'))}
+  catch(e){glbMsg('기본 캐릭터로 시작해요')}
 }
-{const inp=document.getElementById('glbIn'),rs=document.getElementById('glbReset');
- inp.addEventListener('change',()=>{const f=inp.files&&inp.files[0];if(!f)return;if(f.size>60*1024*1024){glbMsg('파일이 너무 커요 (60MB 이하).',true);return}
-  const fr=new FileReader();fr.onload=()=>glbLoad(fr.result,f.name,true);fr.onerror=()=>glbMsg('파일을 읽지 못했어요.',true);fr.readAsArrayBuffer(f);inp.value=''});
- rs.addEventListener('click',()=>{glbClear();glbDB.del();rs.hidden=true;glbMsg('기본 캐릭터로 돌아갔어요.')});
- window.addEventListener('load',()=>{glbDB.get().then(b=>{if(b)glbLoad(b,'저장된 캐릭터',false)})});
+async function glbAuto(){
+  glbMsg('주인공 모델을 찾는 중…');
+  for(const u of [GLB_NAME,'3D/'+GLB_NAME,'./3D/'+GLB_NAME,'../3D/'+GLB_NAME,'assets/'+GLB_NAME]){
+    try{const r=await fetch(u);if(!r.ok)continue;const b=await r.arrayBuffer();if(b.byteLength<200)continue;glbLoad(b,GLB_NAME);return}catch(e){}
+  }
+  glbMsg('기본 캐릭터로 시작해요');
 }
+glbAuto();
 
 
 /* ============ player state & physics ============ */
@@ -2631,10 +2629,15 @@ function zonePoint(zone,away){
     if(away&&Math.hypot(x-P.pos.x,z-P.pos.z)<320)continue;return [x,z]}
   return null;
 }
+function seedSentry(){
+  const w=WALLS[2],H=16,x=w.ux*(w.R+6+H*.15+12),z=w.uz*(w.R+6+H*.15+12);
+  const t=spawnTitan(x,z,H,false,true);t.home='forest';t.town=false;t.sentry=true;t.chaser=true;t.y=terrY(x,z);t.root.position.y=t.y;t.yaw=Math.atan2(-w.ux,-w.uz);t.goal=null;
+}
 function seedTitans(){
   const cnt=IS_TOUCH?{forest:20,desert:28,coast:16}:{forest:78,desert:102,coast:48};
   for(const zone in cnt)for(let i=0;i<cnt[zone];i++){const q=zonePoint(zone,false);if(!q)continue;
     const t=spawnTitan(q[0],q[1],undefined,false,true);t.home=zone;t.town=Math.random()<.1;t.y=terrY(q[0],q[1]);t.root.position.y=t.y}
+  seedSentry();
 }
 function barCanvas(){const c=document.createElement('canvas');c.width=128;c.height=16;return c}
 function updateBar(t){
@@ -2644,7 +2647,7 @@ function updateBar(t){
 }
 function spawnTitan(x,z,H,drop,quiet){
   const alive=TITANS.filter(t=>t.st!=='dead');if(alive.length>=TCFG.max)removeTitan(alive[0]);
-  H=H||(5.5+Math.pow(Math.random(),1.35)*11.5);
+  H=H||(6.5+Math.pow(Math.random(),1.25)*16.5);
   const v=Math.floor(Math.random()*6),m=makeTitan(H,v);
   const runner=H<10&&Math.random()<.2;
   const t=Object.assign(m,{x,z,y:0,yaw:Math.random()*TAU,H,v,rad:H*.15+.6,maxHp:Math.round(40+H*9),st:'walk',phase:Math.random()*6,spd:clamp(10-H*.42+Math.random()*2,3,9.5)*(runner?1.9:1),
@@ -2873,13 +2876,13 @@ function updateTitan(t,dt){
   if(t.think<=0){
     t.think=.35+Math.random()*.25;
     const sr=(t.chaser?150+t.H*7:55)+(t.aggro?70:0),chasing=t.goal&&t.goal.k==='player';
-    const sees=play&&dp<(chasing?sr*1.35:sr)&&P.pos.y-t.y<t.H*1.7+30;
+    const sees=play&&dp<(chasing?sr*1.35:sr)&&P.pos.y-t.y<t.H*1.7+30&&!(t.sentry&&ZONE(Math.hypot(P.pos.x,P.pos.z))<3);
     if(sees){if(!chasing&&time-(TCFG.lastSee||-99)>7&&ZONE(Math.hypot(P.pos.x,P.pos.z))===3){TCFG.lastSee=time;toast('거인이 당신을 발견했어요!',1500)}if(!chasing)sfxAt('notice',t.x,t.z,260,.9);t.goal={k:'player'}}
     else{
       let g=t.goal;
       if(zone<3){const v=pickVictim(t);if(v)g=v}
       if(!g||g.k==='player'||(g.k==='npc'&&(!g.ref.alive||(g.ref.st==='held'&&g.ref.holder!==t)))||(g.k==='ani'&&(g.ref.alive===false||(g.ref.held&&g.ref.held!==t)))||(g.k==='gate')||(g.k==='bld'&&g.ref.dead)||(g.k==='lamp'&&g.ref.dead)||((g.k==='wander'||g.k==='town')&&Math.hypot(g.x-t.x,g.z-t.z)<t.H*.9))g=t.town?townGoal():wanderGoal(t);
-      t.goal=g;
+      t.goal=(t.sentry&&g&&g.k!=='player')?null:g;
     }
     // trampling: anything under foot inside the walls
     if(zone<3){for(const b of BLD){if(b.dead)continue;const d=Math.hypot(b.x-t.x,b.z-t.z);if(d<t.rad+b.r*.6)damageBuilding(b,.34)}
@@ -3424,7 +3427,7 @@ function updateWorld(dt){
   updateTitans(dt);updatePeople(dt);updateAnimals(dt);updateDebris(dt);updateFactory(dt);updateServices(dt);updateHorses(dt);flushDirty();updateHud(dt);
 }
 function initLife(){initDebris();initTitanMats();initPeople();initAnimals();initServices();initUIx();seedTitans();
-  window.SIM.dbg={armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
+  window.SIM.dbg={glbLoad,GLBC,soldier,armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
 
 
 /* ============ boot ============ */
