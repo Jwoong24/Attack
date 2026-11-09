@@ -1281,6 +1281,16 @@ function glbClear(){
   if(GLBC.obj){soldier.root.remove(GLBC.obj);GLBC.obj.traverse(o=>{if(o.geometry)o.geometry.dispose()})}
   GLBC.obj=null;GLBC.mixer=null;GLBC.acts={};GLBC.cur=null;for(const m of GLBC.hidden)m.visible=true;GLBC.hidden=[];
 }
+function glbFacing(obj){ // un-rigged model: facing axis = narrower bbox axis; sign from feet+head offset
+  obj.updateMatrixWorld(true);const pts=[],v=new V3();
+  obj.traverse(o=>{if(o.isMesh&&o.geometry&&o.geometry.attributes.position){const at=o.geometry.attributes.position,st=Math.max(1,Math.floor(at.count/8000));for(let i=0;i<at.count;i+=st){v.fromBufferAttribute(at,i).applyMatrix4(o.matrixWorld);pts.push([v.x,v.y,v.z])}}});
+  if(pts.length<30)return null;
+  let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9,y0=1e9,y1=-1e9,mx=0,mz=0;for(const p of pts){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[2]);z1=Math.max(z1,p[2]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);mx+=p[0];mz+=p[2]}
+  mx/=pts.length;mz/=pts.length;const H=y1-y0||1,useX=(x1-x0)<(z1-z0),ax=useX?0:2;
+  const band=(a,b)=>{let s=0,n=0;for(const p of pts){const f=(p[1]-y0)/H;if(f>=a&&f<b){s+=p[ax]-(useX?mx:mz);n++}}return n?s/n:0};
+  const sc=band(0,.08)+band(.8,1.01),sg=sc>=0?1:-1;
+  return useX?[sg,0]:[0,sg];
+}
 function glbApply(gltf){
   glbClear();const obj=gltf.scene||gltf.scenes[0];
   obj.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(obj),sz=box.getSize(new V3());
@@ -1292,6 +1302,7 @@ function glbApply(gltf){
     R=pick(re,['hand','wrist','forearm|lowerarm','arm|shoulder']);Lh=pick(le,['hand','wrist','forearm|lowerarm','arm|shoulder']);
     if(R&&Lh){const a1=new V3(),a2=new V3();R.getWorldPosition(a1);Lh.getWorldPosition(a2);const r=a1.sub(a2);r.y=0;
       if(r.lengthSq()>1e-6){const fx=r.z,fz=-r.x;obj.rotation.y=-Math.atan2(fx,fz);obj.updateMatrixWorld(true)}}
+    if(!(R&&Lh)){const f=glbFacing(obj);if(f)obj.rotation.y=-Math.atan2(f[0],f[1]);obj.updateMatrixWorld(true)}
     GLBC.yaw=obj.rotation.y;
   }
   const k=1.75/sz.y;obj.scale.multiplyScalar(k);obj.updateMatrixWorld(true);
@@ -3436,7 +3447,7 @@ function updateWorld(dt){
   updateTitans(dt);updatePeople(dt);updateAnimals(dt);updateDebris(dt);updateFactory(dt);updateServices(dt);updateHorses(dt);flushDirty();updateHud(dt);
 }
 function initLife(){initDebris();initTitanMats();initPeople();initAnimals();initServices();initUIx();seedTitans();
-  window.SIM.dbg={glbLoad,GLBC,soldier,armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
+  window.SIM.dbg={glbFacing,glbLoad,GLBC,soldier,armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
 
 
 /* ============ boot ============ */
