@@ -1285,6 +1285,15 @@ function glbApply(gltf){
   glbClear();const obj=gltf.scene||gltf.scenes[0];
   obj.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(obj),sz=box.getSize(new V3());
   if(!isFinite(sz.y)||sz.y<=0)throw new Error('empty');
+  { // face the model along +Z: derive its facing from the left/right hand (or arm) bones
+    let R=null,Lh=null;const re=/(right|_r\b|\.r\b|r_|^r)[_.:\- ]?(hand|wrist|arm|shoulder)|(hand|wrist|arm|shoulder)[_.:\- ]?(right|_r\b|\.r\b|r$)/i,le=/(left|_l\b|\.l\b|l_|^l)[_.:\- ]?(hand|wrist|arm|shoulder)|(hand|wrist|arm|shoulder)[_.:\- ]?(left|_l\b|\.l\b|l$)/i;
+    const hp=[],cands=[];obj.traverse(o=>{if(o.isBone||o.type==='Bone'||o.isObject3D&&o.name)cands.push(o)});
+    const pick=(rx,pri)=>{for(const w of pri){const o=cands.find(o=>rx.test(o.name)&&new RegExp(w,'i').test(o.name));if(o)return o}return null};
+    R=pick(re,['hand','wrist','forearm|lowerarm','arm|shoulder']);Lh=pick(le,['hand','wrist','forearm|lowerarm','arm|shoulder']);
+    if(R&&Lh){const a1=new V3(),a2=new V3();R.getWorldPosition(a1);Lh.getWorldPosition(a2);const r=a1.sub(a2);r.y=0;
+      if(r.lengthSq()>1e-6){const fx=r.z,fz=-r.x;obj.rotation.y=-Math.atan2(fx,fz);obj.updateMatrixWorld(true)}}
+    GLBC.yaw=obj.rotation.y;
+  }
   const k=1.75/sz.y;obj.scale.multiplyScalar(k);obj.updateMatrixWorld(true);
   const b2=new THREE.Box3().setFromObject(obj),cn=b2.getCenter(new V3());obj.position.set(-cn.x,-soldier.pelvisY-b2.min.y,-cn.z);
   obj.traverse(o=>{o.frustumCulled=false;if(o.isMesh){o.castShadow=true;o.receiveShadow=false;if(o.material){const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{m.side=THREE.DoubleSide;if(m.map)m.map.encoding=THREE.sRGBEncoding})}}});
