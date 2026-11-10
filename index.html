@@ -2075,7 +2075,8 @@ document.addEventListener('mousemove',e=>{if(state!=='play')return;if(document.p
 document.addEventListener('mousedown',e=>{if(state!=='play')return;if(performance.now()-(P.lastTouch||0)<700)return;if(e.button===0)startAttack();if(e.button===2)mouse.r=true;e.preventDefault()});
 document.addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false});
 document.addEventListener('contextmenu',e=>{if(state==='play')e.preventDefault()});
-document.addEventListener('wheel',e=>{if(state!=='play')return;const k=Math.sign(e.deltaY);{const z=P.zoom||1;if(P.third){if(k>0&&z<1)P.zoom=Math.min(1,z*1.12);else if(k<0&&P.camDist<=1.9)P.zoom=Math.max(.12,z*.88);else P.camDist=clamp(P.camDist*(1+k*.1),1.8,16)}else P.zoom=clamp(z*(1+k*.1),.12,1.25)}},{passive:true});
+function zoomScale(r){const z=P.zoom||1;if(P.third){if(r>1&&z<1)P.zoom=Math.min(1,z*r);else if(r<1&&P.camDist<=1.9)P.zoom=Math.max(.12,z*r);else P.camDist=clamp(P.camDist*r,1.8,16)}else P.zoom=clamp(z*r,.12,1.25)}
+document.addEventListener('wheel',e=>{if(state!=='play')return;zoomScale(1+Math.sign(e.deltaY)*.1)},{passive:true});
 document.addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code)&&state==='play')e.preventDefault();
   if(state==='ui'){if(e.code==='Escape'||e.code==='KeyG')closePanel();return}
@@ -2111,7 +2112,7 @@ bindBtn('#bAtk',()=>startAttack());
 bindBtn('#bJump',()=>{keys.Space=true;P.jumpReq=true},()=>{keys.Space=false});
 bindBtn('#bBoost',()=>{keys.ShiftLeft=true},()=>{keys.ShiftLeft=false});
 bindBtn('#bHook',()=>{mouse.r=true},()=>{mouse.r=false});
-bindBtn('#bView',()=>setView(!P.third));
+bindBtn('#bView',()=>{setView(!P.third);if(IS_TOUCH&&time-(P.zoomHint||-99)>60){P.zoomHint=time;toast('두 손가락을 벌리거나 모으면 줌 인/아웃!',2600)}});
 bindBtn('#bGreet',()=>doGreet());
 bindBtn('#bPause',()=>pauseGame());
 const joyBase=$('#joyBase'),joyKnob=$('#joyKnob'),lookT=new Map();let joyC={x:0,y:0};
@@ -2125,9 +2126,10 @@ document.addEventListener('touchstart',e=>{if(state!=='play')return;let used=fal
 document.addEventListener('touchmove',e=>{if(state!=='play')return;let used=false;
   for(const t of e.changedTouches){
     if(t.identifier===joyId){joyMove(t);used=true}
-    else{const p=lookT.get(t.identifier);if(p){P.yaw-=(t.clientX-p.x)*.0048;P.pitch=clamp(P.pitch-(t.clientY-p.y)*.0048,-1.45,1.45);p.x=t.clientX;p.y=t.clientY;used=true}}}
+    else{const p=lookT.get(t.identifier);if(p){if(lookT.size<2){P.yaw-=(t.clientX-p.x)*.0048;P.pitch=clamp(P.pitch-(t.clientY-p.y)*.0048,-1.45,1.45)}p.x=t.clientX;p.y=t.clientY;used=true}}}
+  if(lookT.size>=2){const [a,b]=[...lookT.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(P.pinchD&&d>8)zoomScale(clamp(P.pinchD/d,.8,1.25));P.pinchD=d}else P.pinchD=0;
   if(used)e.preventDefault()},{passive:false});
-const tEnd=e=>{for(const t of e.changedTouches){if(t.identifier===joyId){joyId=null;joy.x=joy.y=0;joyBase.style.display='none'}lookT.delete(t.identifier)}};
+const tEnd=e=>{for(const t of e.changedTouches){if(t.identifier===joyId){joyId=null;joy.x=joy.y=0;joyBase.style.display='none'}lookT.delete(t.identifier);P.pinchD=0}};
 document.addEventListener('touchend',tEnd);document.addEventListener('touchcancel',tEnd);
 
 /* ============ main loop ============ */
@@ -2657,6 +2659,7 @@ function seedTitans(){
   const cnt=IS_TOUCH?{forest:20,desert:28,coast:16}:{forest:78,desert:102,coast:48};
   for(const zone in cnt)for(let i=0;i<cnt[zone];i++){const q=zonePoint(zone,false);if(!q)continue;
     const t=spawnTitan(q[0],q[1],undefined,false,true);t.home=zone;t.town=Math.random()<.1;t.y=terrY(q[0],q[1]);t.root.position.y=t.y}
+  for(const t of TITANS){if(!t.sentry&&Math.random()<.3){const g=raidGoal(t,true);if(g)t.goal=g}}
   seedSentry();
 }
 function barCanvas(){const c=document.createElement('canvas');c.width=128;c.height=16;return c}
@@ -2738,6 +2741,12 @@ function waypoint(t,gx,gz){
 function wanderGoal(t){
   const q=zonePoint(t.home||'desert',false);
   return q?{k:'wander',x:q[0],z:q[1]}:{k:'wander',x:0,z:1700};
+}
+function raidGoal(t,force){
+  if(!force&&Math.random()>.34)return null;
+  const zs=ZONE(Math.hypot(t.x,t.z));if(zs<1)return null;
+  const w=WALLS[Math.min(zs,3)-1];if(!w||w.broken||w.open||w.lift>1)return null;
+  return {k:'raid',x:w.ux*(w.R-30),z:w.uz*(w.R-30)};
 }
 function townGoal(){const a=Math.random()*TAU,r=WALLS[1].R+30+Math.random()*230;return {k:'town',x:Math.sin(a)*r,z:Math.cos(a)*r}}
 function pickVictim(t){
@@ -2901,7 +2910,7 @@ function updateTitan(t,dt){
     else{
       let g=t.goal;
       if(zone<3){const v=pickVictim(t);if(v)g=v}
-      if(!g||g.k==='player'||(g.k==='npc'&&(!g.ref.alive||(g.ref.st==='held'&&g.ref.holder!==t)))||(g.k==='ani'&&(g.ref.alive===false||(g.ref.held&&g.ref.held!==t)))||(g.k==='gate')||(g.k==='bld'&&g.ref.dead)||(g.k==='lamp'&&g.ref.dead)||((g.k==='wander'||g.k==='town')&&Math.hypot(g.x-t.x,g.z-t.z)<t.H*.9))g=t.town?townGoal():wanderGoal(t);
+      if(!g||g.k==='player'||(g.k==='npc'&&(!g.ref.alive||(g.ref.st==='held'&&g.ref.holder!==t)))||(g.k==='ani'&&(g.ref.alive===false||(g.ref.held&&g.ref.held!==t)))||(g.k==='gate')||(g.k==='bld'&&g.ref.dead)||(g.k==='lamp'&&g.ref.dead)||((g.k==='wander'||g.k==='town'||g.k==='raid')&&Math.hypot(g.x-t.x,g.z-t.z)<t.H*.9))g=raidGoal(t)||(t.town?townGoal():wanderGoal(t));
       t.goal=(t.sentry&&g&&g.k!=='player')?null:g;
     }
     // trampling: anything under foot inside the walls
@@ -2937,6 +2946,21 @@ function updateTitan(t,dt){
         const sp=t.spd*((g.k==='wander'||g.k==='town')?.55:1)*Math.max(.2,1-Math.abs(dy)/1.7)*(near?.35:1);
         t.x+=Math.sin(t.yaw)*sp*dt;t.z+=Math.cos(t.yaw)*sp*dt;moving=sp>.4;spdNow=sp;
       }
+    }
+  }
+  { // doorway anti-jam: a titan lingering inside an open gate (e.g. turning to look at the player) is walked through and out
+    let inG=null;
+    if(!t.sentry)for(const w of WALLS){
+      if(!(w.open||w.lift>t.H+1.5))continue;
+      const L=t.x*w.tx+t.z*w.tz,Rr=t.x*w.ux+t.z*w.uz;
+      if(Math.abs(L)<GW+t.rad&&Rr>0&&Math.abs(Rr-w.R)<(w.rOut-w.R)+t.rad+3){inG={w,L,Rr};break}
+    }
+    if(inG&&!t.atk)t.gt=(t.gt||0)+dt;else t.gt=0;
+    if(t.gt>1.8){
+      const w=inG.w,fd=Math.sin(t.yaw)*w.ux+Math.cos(t.yaw)*w.uz;
+      let sd;if(Math.abs(fd)>.5)sd=Math.sign(fd);else{const gp=t.goal?goalPos(t.goal):null;sd=gp?((gp[0]*w.ux+gp[1]*w.uz)>w.R?1:-1):(inG.Rr>w.R?1:-1)}
+      const want=Math.atan2(w.ux*sd,w.uz*sd);t.yaw+=clamp(wrapPi(want-t.yaw),-4*dt,4*dt);
+      const sp=Math.max(5,t.spd*.9);t.x+=(w.ux*sd*sp-inG.L*w.tx*1.2)*dt;t.z+=(w.uz*sd*sp-inG.L*w.tz*1.2)*dt;moving=true;spdNow=sp;
     }
   }
   titanWalls(t,px,pz);
