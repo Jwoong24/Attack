@@ -507,7 +507,7 @@ const EMB=[
   {id:'train',name:'훈련병단',desc:'교차한 두 자루의 검 · 흑색 손잡이와 백색 날',cloak:'#1d4a7a',cloak2:'#163a62'},
   {id:'survey',name:'조사병단',desc:'좌우로 펼친 두 날개 · 왼쪽은 청색, 오른쪽은 백색',cloak:'#2f5a4a',cloak2:'#254a3c'},
   {id:'garrison',name:'주둔병단',desc:'방패 위 장미 꽃잎 두 장과 가시 · 적색과 백색',cloak:'#6c2327',cloak2:'#561a1e'},
-  {id:'mp',name:'헌병단',desc:'수사슴 머리 · 녹색',cloak:'#2b552a',cloak2:'#214420'}
+  {id:'mp',name:'헌병단',desc:'수사슴 머리 · 갈색',cloak:'#6b4526',cloak2:'#52341c'}
 ];
 function shieldPath(g,s){
   g.beginPath();g.moveTo(-.46*s,-.5*s);g.lineTo(.46*s,-.5*s);g.lineTo(.46*s,.06*s);g.quadraticCurveTo(.46*s,.34*s,0,.5*s);g.quadraticCurveTo(-.46*s,.34*s,-.46*s,.06*s);g.closePath();
@@ -554,7 +554,7 @@ function drawFaction(g,id,cx,cy,s){
     petal(-.14,-.17,-.5);petal(.14,-.17,.5);
     g.restore();
   }else{
-    const G='#275d22',D='#17391a',L='#e6e2c4';
+    const G='#7a4e2a',D='#3f2814',L='#e6dcc4';
     g.save();g.translate(0,.0);
     g.strokeStyle=L;g.lineWidth=.028;
     for(const s of[-1,1]){g.beginPath();g.moveTo(s*.07,-.12);g.quadraticCurveTo(s*.2,-.24,s*.17,-.4);
@@ -1386,7 +1386,7 @@ const GLBC={obj:null,mixer:null,acts:{},cur:null,hidden:[]};
 function glbMsg(t,bad){const m=document.getElementById('glbMsg');if(m){m.textContent=t;m.style.color=bad?'#e8806a':''}}
 function glbClear(){
   if(GLBC.obj){soldier.root.remove(GLBC.obj);GLBC.obj.traverse(o=>{if(o.geometry)o.geometry.dispose()})}
-  GLBC.obj=null;GLBC.mixer=null;GLBC.acts={};GLBC.cur=null;for(const m of GLBC.hidden)m.visible=true;GLBC.hidden=[];
+  GLBC.cape=null;GLBC.obj=null;GLBC.mixer=null;GLBC.acts={};GLBC.cur=null;for(const m of GLBC.hidden)m.visible=true;GLBC.hidden=[];
 }
 function glbFacing(obj){ // un-rigged model: facing axis = narrower bbox axis; sign from feet+head offset
   obj.updateMatrixWorld(true);const pts=[],v=new V3();
@@ -1397,6 +1397,78 @@ function glbFacing(obj){ // un-rigged model: facing axis = narrower bbox axis; s
   const band=(a,b)=>{let s=0,n=0;for(const p of pts){const f=(p[1]-y0)/H;if(f>=a&&f<b){s+=p[ax]-(useX?mx:mz);n++}}return n?s/n:0};
   const sc=band(0,.08)+band(.8,1.01),sg=sc>=0?1:-1;
   return useX?[sg,0]:[0,sg];
+}
+
+/* ---- cloak recolor + emblem decal for the loaded GLB (cloak = the green region of its texture) ---- */
+const CAPE_GREEN=(r,g,b)=>{const gn=g-Math.max(r,b);return g<175&&gn>=4?Math.min(1,(gn-4)/14):0};
+function capeInit(obj){
+  GLBC.cape=null;let mesh=null;obj.traverse(o=>{if(!mesh&&o.isMesh&&o.material&&o.material.map&&o.material.map.image&&o.geometry.attributes.uv&&o.geometry.index)mesh=o});
+  if(!mesh)return;
+  try{
+    const img=mesh.material.map.image,w=img.width,h=img.height;if(!w||!h||w*h>4200000)return;
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.drawImage(img,0,0);
+    const orig=cx.getImageData(0,0,w,h),od=orig.data;
+    let n=0,lsum=0;for(let i=0;i<od.length;i+=4){const k=CAPE_GREEN(od[i],od[i+1],od[i+2]);if(k>.5){n++;lsum+=od[i]*.3+od[i+1]*.59+od[i+2]*.11}}
+    if(n<w*h*.02)return;
+    const ref=lsum/n;
+    mesh.updateWorldMatrix(true,false);const MW=new THREE.Matrix4().copy(obj.parent?obj.parent.matrixWorld:new THREE.Matrix4()).invert().multiply(mesh.matrixWorld);const g=mesh.geometry,pa=g.attributes.position,na=g.attributes.normal,ua=g.attributes.uv,idx=g.index.array,vc=pa.count;
+    const wp=new Float32Array(vc*3),wn=new Float32Array(vc*3),uv=new Float32Array(vc*2),gv=new Uint8Array(vc),bv=new Uint8Array(vc),v3=new V3(),nm=new THREE.Matrix3().getNormalMatrix(MW);
+    for(let i=0;i<vc;i++){v3.fromBufferAttribute(pa,i).applyMatrix4(MW);wp[i*3]=v3.x;wp[i*3+1]=v3.y;wp[i*3+2]=v3.z;
+      v3.fromBufferAttribute(na,i).applyMatrix3(nm).normalize();wn[i*3]=v3.x;wn[i*3+1]=v3.y;wn[i*3+2]=v3.z;
+      const u=ua.getX(i),v=ua.getY(i);uv[i*2]=u;uv[i*2+1]=v;
+      const px=Math.min(w-1,Math.max(0,u*w|0)),py=Math.min(h-1,Math.max(0,v*h|0)),q=(py*w+px)*4,r=od[q],gg=od[q+1],b=od[q+2];
+      gv[i]=CAPE_GREEN(r,gg,b)>.5?1:0;bv[i]=(b>r*1.25&&b>gg*1.05&&b>70)?1:0}
+    // back of the cloak
+    const back=[];let bx0=1e9,bx1=-1e9,ysum=0,yn=0;
+    for(let t=0;t<idx.length;t+=3){const a=idx[t],b=idx[t+1],c=idx[t+2];if(!(gv[a]&&gv[b]&&gv[c]))continue;
+      const nz=(wn[a*3+2]+wn[b*3+2]+wn[c*3+2])/3;if(nz>-.5)continue;back.push(t);
+      for(const q of[a,b,c]){bx0=Math.min(bx0,wp[q*3]);bx1=Math.max(bx1,wp[q*3]);ysum+=wp[q*3+1];yn++}}
+    if(back.length<200)return;
+    const H=new THREE.Box3().setFromObject(obj).getSize(new V3()).y;
+    const backC={x:(bx0+bx1)/2,y:ysum/yn+H*.03,S:H*.27};
+    // small chest crest of the original model (blue/white badge) -> replaced by the chosen emblem
+    let crest=null;{const bi=[];for(let i=0;i<vc;i++)if(bv[i]&&!gv[i])bi.push(i);
+      if(bi.length>=15&&bi.length<2500){let mx=0,my=0,mz=0;for(const i of bi){mx+=wp[i*3];my+=wp[i*3+1];mz+=wp[i*3+2]}mx/=bi.length;my/=bi.length;mz/=bi.length;
+        let ext=0;for(const i of bi)ext=Math.max(ext,Math.hypot(wp[i*3]-mx,wp[i*3+1]-my,wp[i*3+2]-mz));
+        if(ext<H*.16){const tr=[];let nx=0,ny=0,nzz=0;
+          for(let t=0;t<idx.length;t+=3){const a=idx[t],b=idx[t+1],c=idx[t+2];if(gv[a]&&gv[b]&&gv[c])continue;
+            const ok=q=>Math.hypot(wp[q*3]-mx,wp[q*3+1]-my,wp[q*3+2]-mz)<ext*1.5;if(ok(a)&&ok(b)&&ok(c)){tr.push(t);nx+=wn[a*3]+wn[b*3]+wn[c*3];ny+=wn[a*3+1]+wn[b*3+1]+wn[c*3+1];nzz+=wn[a*3+2]+wn[b*3+2]+wn[c*3+2]}}
+          const L=Math.hypot(nx,ny,nzz)||1;if(tr.length>4)crest={tr,c:{x:mx,y:my,z:mz},n:{x:nx/L,y:ny/L,z:nzz/L},S:Math.max(H*.13,ext*2.4)}}}}
+    const out=new ImageData(w,h),tex=new THREE.CanvasTexture(cv);tex.flipY=mesh.material.map.flipY;tex.encoding=THREE.sRGBEncoding;tex.anisotropy=8;
+    GLBC.cape={mesh,cv,cx,orig,out,ref,w,h,wp,wn,uv,idx,back,backC,crest,tex,id:null};
+  }catch(e){console.warn('cape init failed',e);GLBC.cape=null}
+}
+function capeApply(id){
+  const C=GLBC.cape;if(!C)return;const E=EMB.find(e=>e.id===id)||EMB[0];
+  try{
+    const hex=E.cloak.replace('#',''),tr=parseInt(hex.slice(0,2),16),tg=parseInt(hex.slice(2,4),16),tb=parseInt(hex.slice(4,6),16),sc=1.18;
+    const od=C.orig.data,d=C.out.data,w=C.w,h=C.h;
+    for(let i=0;i<od.length;i+=4){const r=od[i],g=od[i+1],b=od[i+2],k=CAPE_GREEN(r,g,b);
+      if(k>0){const f=(r*.3+g*.59+b*.11)/C.ref*sc;d[i]=r+(Math.min(255,tr*f)-r)*k;d[i+1]=g+(Math.min(255,tg*f)-g)*k;d[i+2]=b+(Math.min(255,tb*f)-b)*k}else{d[i]=r;d[i+1]=g;d[i+2]=b}d[i+3]=255}
+    const ec=document.createElement('canvas');ec.width=ec.height=256;const eg=ec.getContext('2d');drawFaction(eg,id,128,128,244);const ed=eg.getImageData(0,0,256,256).data;
+    const sample=(u,v,px)=>{const x=u*255,y=v*255,x0=x|0,y0=y|0,x1=Math.min(255,x0+1),y1=Math.min(255,y0+1),fx=x-x0,fy=y-y0;
+      for(let c=0;c<4;c++){const a=ed[(y0*256+x0)*4+c],b=ed[(y0*256+x1)*4+c],cc=ed[(y1*256+x0)*4+c],dd=ed[(y1*256+x1)*4+c];px[c]=(a*(1-fx)+b*fx)*(1-fy)+(cc*(1-fx)+dd*fx)*fy}};
+    const px=[0,0,0,0],shade=(tr+tg+tb)/3;
+    const raster=(t,decal,fill)=>{const i0=C.idx[t],i1=C.idx[t+1],i2=C.idx[t+2],U=C.uv;
+      const ax=U[i0*2]*w,ay=U[i0*2+1]*h,bx=U[i1*2]*w,by=U[i1*2+1]*h,cx=U[i2*2]*w,cy=U[i2*2+1]*h;
+      const den=(by-cy)*(ax-cx)+(cx-bx)*(ay-cy);if(Math.abs(den)<1e-9)return;
+      const x0=Math.max(0,Math.floor(Math.min(ax,bx,cx))),x1=Math.min(w-1,Math.ceil(Math.max(ax,bx,cx))),y0=Math.max(0,Math.floor(Math.min(ay,by,cy))),y1=Math.min(h-1,Math.ceil(Math.max(ay,by,cy)));
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+        const l0=((by-cy)*(x+.5-cx)+(cx-bx)*(y+.5-cy))/den,l1=((cy-ay)*(x+.5-cx)+(ax-cx)*(y+.5-cy))/den,l2=1-l0-l1;
+        if(l0<-.02||l1<-.02||l2<-.02)continue;
+        const q=(y*w+x)*4;
+        if(fill&&CAPE_GREEN(od[q],od[q+1],od[q+2])<=0){const f=.85+((x*7+y*13)%9)*.012;d[q]=tr*f;d[q+1]=tg*f;d[q+2]=tb*f}
+        const X=l0*C.wp[i0*3]+l1*C.wp[i1*3]+l2*C.wp[i2*3],Y=l0*C.wp[i0*3+1]+l1*C.wp[i1*3+1]+l2*C.wp[i2*3+1],Z=l0*C.wp[i0*3+2]+l1*C.wp[i1*3+2]+l2*C.wp[i2*3+2];
+        const du=decal(X,Y,Z);if(!du)continue;sample(du[0],du[1],px);const a=px[3]/255;if(a<=.02)continue;
+        d[q]=d[q]*(1-a)+px[0]*a;d[q+1]=d[q+1]*(1-a)+px[1]*a;d[q+2]=d[q+2]*(1-a)+px[2]*a}};
+    const B=C.backC;
+    for(const t of C.back)raster(t,(X,Y)=>{const u=-(X-B.x)/B.S+.5,v=-(Y-B.y)/B.S+.5;return(u>=0&&u<1&&v>=0&&v<1)?[u,v]:null},false);
+    if(C.crest){const K=C.crest,n=K.n;let rx=-n.z*0-n.y*0,ry=0,rz=0;// right = cross(-n, up)
+      const ax=-n.x,ay=-n.y,az=-n.z;rx=ay*0-az*1;ry=az*0-ax*0;rz=ax*1-ay*0;const rl=Math.hypot(rx,ry,rz)||1;rx/=rl;ry/=rl;rz/=rl;
+      const ux=ry*az-rz*ay,uy=rz*ax-rx*az,uz=rx*ay-ry*ax;// up-on-surface
+      for(const t of K.tr)raster(t,(X,Y,Z)=>{const dx=X-K.c.x,dy=Y-K.c.y,dz=Z-K.c.z;const u=(dx*rx+dy*ry+dz*rz)/K.S+.5,v=-(dx*ux+dy*uy+dz*uz)/K.S+.5;return(u>=0&&u<1&&v>=0&&v<1)?[u,v]:null},true)}
+    C.cx.putImageData(C.out,0,0);C.mesh.material.map=C.tex;C.tex.needsUpdate=true;C.mesh.material.needsUpdate=true;C.id=id;
+  }catch(e){console.warn('cape apply failed',e)}
 }
 function glbApply(gltf){
   glbClear();const obj=gltf.scene||gltf.scenes[0];
@@ -1419,6 +1491,7 @@ function glbApply(gltf){
   const keep=new Set();for(const n of ['L','R']){soldier.arms[n].blade.traverse(o=>keep.add(o))}
   const hide=[];soldier.root.traverse(o=>{if(o.isMesh&&!keep.has(o))hide.push(o)});for(const m of hide){m.visible=false;GLBC.hidden.push(m)}
   soldier.root.add(obj);GLBC.obj=obj;
+  obj.updateMatrixWorld(true);capeInit(obj);capeApply(P.emb||'train');
   if(gltf.animations&&gltf.animations.length){
     GLBC.mixer=new THREE.AnimationMixer(obj);const find=re=>gltf.animations.find(a=>re.test(a.name));
     const idle=find(/idle|stand|wait|breath/i)||gltf.animations[0],run=find(/run|walk|move|jog/i),air=find(/fly|fall|jump|air/i);
@@ -3400,7 +3473,7 @@ function svcDecor(kind,x,z,w,d){
     [-1,1].forEach((sx,i)=>{const px=x+sx*(w/2+.8),pz=fz+.7;put(MG.metal,boxGeo(.16,11,.16,1),px,5.5,pz,0,C(0x222222));put(MG.metal,new THREE.SphereGeometry(.28,8,6),px,11.1,pz,0,C(0xc79a3b));
       flagMesh(ids[i*2],2.2,3.4,px+sx*1.2,9.2,pz,0,b);flagMesh(ids[i*2+1],2.2,3.4,px+sx*1.2,5.6,pz,0,b)});
     put(MG.stone,new THREE.CylinderGeometry(5.2,5.4,.16,28),x,.08,fz+7.2,0,C(0x6a7a8a));put(MG.stone,new THREE.CylinderGeometry(3.4,3.4,.2,28),x,.1,fz+7.2,0,C(0xc9ccd0));
-    ids.forEach((id,i)=>{const a=i*Math.PI/2+Math.PI/4;put(MG.stone,boxGeo(1.6,.24,1.6,1),x+Math.sin(a)*2,.12,fz+7.2+Math.cos(a)*2,a,C([0x1d4a7a,0x2f5a4a,0x8c0205,0x275d22][i]))});
+    ids.forEach((id,i)=>{const a=i*Math.PI/2+Math.PI/4;put(MG.stone,boxGeo(1.6,.24,1.6,1),x+Math.sin(a)*2,.12,fz+7.2+Math.cos(a)*2,a,C([0x1d4a7a,0x2f5a4a,0x8c0205,0x7a4e2a][i]))});
   }
   b.ranges=b.ranges.concat(rangesSince(snap));b.c1=colliders.length;b.r1=roofs.length;b.lp1=lampPts.length;
 }
@@ -3489,7 +3562,7 @@ function initServices(){
   {const sb=FAC.sb,mb=FAC.mpb;
    addService('rec_survey',sb.x+9,sb.z+11.5,Math.PI,6.8,{cloth:0x2f5a4a,legs:0x2a2a30,skin:0xe2b48c,hair:0x4a3a2a,hat:'cap',hatc:0x2f5a4a,trim:0xeaeaea,scarf:0xeaeaea,eye:0x3a5a8a},'조사병단 모집관','G · 문장 권유','조');
    FAC.garr.forEach(h=>{const gb=h.b;addService('rec_garr',gb.x-7,gb.z+20,0,6.8,{cloth:0x8c0205,legs:0x2a2a30,skin:0xd8a880,hair:0x2a1a12,hat:'cap',hatc:0x8c0205,trim:0xeaeaea,scarf:0xeaeaea,eye:0x4a3a2a},'주둔병단 모집관','G · 문장 권유','주')});
-   addService('rec_mp',mb.x+15,mb.z+16+4.5,0,6.8,{cloth:0x275d22,legs:0x2a2a30,skin:0xe8c4a0,hair:0x5a4a3a,hat:'cap',hatc:0x275d22,trim:0xe6e2c4,scarf:0xe6e2c4,eye:0x3a5a3a},'헌병단 모집관','G · 문장 권유','헌')}
+   addService('rec_mp',mb.x+15,mb.z+16+4.5,0,6.8,{cloth:0x6b4526,legs:0x2a2a30,skin:0xe8c4a0,hair:0x5a4a3a,hat:'cap',hatc:0x6b4526,trim:0xe6e2c4,scarf:0xe6e2c4,eye:0x3a5a3a},'헌병단 모집관','G · 문장 권유','헌')}
   HORSES.forEach((hd,i)=>{const px=STB.x-13,pz=paddockZ;const pos=[[px+9,pz+5],[px+14,pz+5],[px+19,pz+5],[px+11.5,pz+12.5],[px+16.5,pz+12.5]][i];
     const yaw=[-.5,.3,-.2,Math.PI*.9,Math.PI*1.1][i];const H=spawnHorse(hd,pos[0],pos[1],yaw,true);DISPLAY.push(H)});
 }
@@ -3797,21 +3870,21 @@ function buildMPHall(h){
   for(let i=0;i<=8;i++)put(MG.stone,boxGeo(1,H,.7,1.5),cx-w/2+i*w/8,H/2,cz+d/2+.3,0,C(0xe2dfd3));
   winRows(cx,cz,w,d,H-1.5,fl,true);
   frontDoor(cx,cz,d,4.6,7.2);
-  gableRoof(cx,cz,w,d,H+.8,8.5,C(0x4d9a58),wall);
+  gableRoof(cx,cz,w,d,H+.8,8.5,C(0x8a5a32),wall);
   addBox(cx-w/2-.8,cx+w/2+.8,0,H+1,cz-d/2-.8,cz+d/2+.8);
   // clock tower (center, rear of facade)
   put(MG.stone,boxGeo(8,16,8,3),cx,H+8,cz-2,0,C(0xece9de));put(MG.stone,boxGeo(8.8,.6,8.8,2),cx,H+16,cz-2,0,C(0xd6d2c4));
   for(let k=0;k<4;k++){const a=k*Math.PI/2;put(MG.clock,new THREE.CircleGeometry(2.2,24),cx+Math.sin(a)*4.05,H+11,cz-2+Math.cos(a)*4.05,a)}
-  put(MG.roof,new THREE.ConeGeometry(6.2,11,4),cx,H+16+5.5,cz-2,Math.PI/4,C(0x4d9a58));put(MG.metal,new THREE.SphereGeometry(.6,10,8),cx,H+33,cz-2,0,C(0xd2a64a));
+  put(MG.roof,new THREE.ConeGeometry(6.2,11,4),cx,H+16+5.5,cz-2,Math.PI/4,C(0x8a5a32));put(MG.metal,new THREE.SphereGeometry(.6,10,8),cx,H+33,cz-2,0,C(0xd2a64a));
   addBox(cx-4,cx+4,H,H+16,cz-6,cz+2);addBox(cx-2.5,cx+2.5,H+16,H+25,cz-4.5,cz+.5);
-  for(const sx of[-1,1])tower(cx,cz,sx*(w/2+2),d/2-1,3.4,H+5,C(0x4d9a58),8,C(0xe8e5da));
+  for(const sx of[-1,1])tower(cx,cz,sx*(w/2+2),d/2-1,3.4,H+5,C(0x8a5a32),8,C(0xe8e5da));
   const b=fbEnd(t,{x:cx,z:cz,r:Math.hypot(w,d)*.5,hp:40,kind:'mp',fid:'mp',name:'헌병단 본부',h:H+26,barY:H+36});
   plaque('mp',8.8,9.6,cx,H*.66,cz+d/2+.55,0,b);
   for(const s of[-1,1])flagMesh('mp',2.8,5,cx+s*11,H*.58,cz+d/2+.55,0,b);
   for(const s of[-1,1])flagMesh('mp',3,4.6,cx+s*(w/2+2)+0,H+5+8+4.5,cz+d/2-1+1.8,0,b);
-  plate('헌 병 단',8,1.6,cx,H+.4,cz+d/2+.9,0,'#e9e4cc','#275d22',b);
+  plate('헌 병 단',8,1.6,cx,H+.4,cz+d/2+.9,0,'#e9e4cc','#6b4526',b);
   const zy=cz+d/2+3;yardFence(cx,zy+.5,zy+12,22,C(0xe8e4d4));dummies(cx,zy+6,4,24);
-  put(MG.wood,boxGeo(10,3,5,2),cx+w/2+6,1.5,cz-4,0,C(0xe8e4d4));put(MG.roof,roofGeo(5.6,3,2),cx+w/2+6,3,cz-4,0,C(0x4d9a58)); // stable lean-to
+  put(MG.wood,boxGeo(10,3,5,2),cx+w/2+6,1.5,cz-4,0,C(0xe8e4d4));put(MG.roof,roofGeo(5.6,3,2),cx+w/2+6,3,cz-4,0,C(0x8a5a32)); // stable lean-to
   addBox(cx+w/2+1,cx+w/2+11,0,3,cz-6.5,cz-1.5);
   for(const sx of[-1,1])lamp(cx+sx*(w/2+4),cz+d/2+5);
   b.yard={x:cx,z:zy+6};b.door={x:cx,z:cz+d/2+1.5};return b}
@@ -3912,6 +3985,7 @@ P.emb='train';
 function setEmblem(id,silent){
   if(!EMB.find(e=>e.id===id))id='train';P.emb=id;store.set('wmt-emb',id);
   try{const img=T.cloak.image,g=img.getContext('2d');drawCloak(g,img.width,id);T.cloak.needsUpdate=true}catch(e){}
+  try{if(GLBC.cape)capeApply(id)}catch(e){}
   try{const c=$('#emblem'),g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);drawFaction(g,id,64,64,118)}catch(e){}
   if(!silent){const E=EMB.find(e=>e.id===id);toast('문장을 '+E.name+' 문장으로 바꿨어요!',2200)}
 }
@@ -3998,7 +4072,7 @@ function makeSoldier(fid,mounted){
   root.traverse(m=>{if(m.isMesh)m.castShadow=false});scene.add(root);root.visible=false;
   return {root,g,torso,legs,arms,head,cloak:cl,sword,horse};
 }
-function FSJ_mp(){return FSM.mpsad||(FSM.mpsad=SMAT(0x275d22,.7))}
+function FSJ_mp(){return FSM.mpsad||(FSM.mpsad=SMAT(0x6b4526,.7))}
 
 const SOLD=[],SCFG={max:0};
 const FSPEC={train:{hp:60,dps:4,spd:12,rt:70},garrison:{hp:130,dps:10,spd:15,rt:80},mp:{hp:420,dps:40,spd:26,rt:120}};
