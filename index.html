@@ -1,4 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>성벽 기동 훈련</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Nanum+Myeongjo:wght@700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap">
@@ -501,11 +502,78 @@ function drawEmblem(g,cx,cy,r,fg,bg){
   for(let i=0;i<4;i++){g.save();g.rotate(i*Math.PI/2+Math.PI/4);g.beginPath();g.arc(0,-r*.92,r*.04,0,TAU);g.fill();g.restore()}
   g.restore();
 }
-function drawCloak(g,s){
-  const gr=g.createLinearGradient(0,0,s,0);gr.addColorStop(0,'#27493f');gr.addColorStop(.5,'#31604f');gr.addColorStop(1,'#27493f');g.fillStyle=gr;g.fillRect(0,0,s,s);
+/* ===== Faction emblems (all original artwork, drawn on a grey 2x2-pane shield) ===== */
+const EMB=[
+  {id:'train',name:'훈련병단',desc:'교차한 두 자루의 검 · 흑색 손잡이와 백색 날',cloak:'#2f5a4a',cloak2:'#254a3c'},
+  {id:'survey',name:'조사병단',desc:'나침반 별 · 청색과 백색',cloak:'#1d4a7a',cloak2:'#163a62'},
+  {id:'garrison',name:'주둔병단',desc:'성벽 탑 · 적색과 백색',cloak:'#6c2327',cloak2:'#561a1e'},
+  {id:'mp',name:'헌병단',desc:'수사슴 머리 · 녹색',cloak:'#2b552a',cloak2:'#214420'}
+];
+function shieldPath(g,s){
+  g.beginPath();g.moveTo(-.46*s,-.5*s);g.lineTo(.46*s,-.5*s);g.lineTo(.46*s,.06*s);g.quadraticCurveTo(.46*s,.34*s,0,.5*s);g.quadraticCurveTo(-.46*s,.34*s,-.46*s,.06*s);g.closePath();
+}
+function drawFaction(g,id,cx,cy,s){
+  g.save();g.translate(cx,cy);g.lineJoin='round';g.lineCap='round';
+  // shield body (grey, 2x2 panes, pointed bottom)
+  shieldPath(g,s);g.fillStyle='#a3a8ad';g.fill();
+  g.save();shieldPath(g,s);g.clip();
+  const gr=g.createLinearGradient(-.46*s,-.5*s,.46*s,.5*s);gr.addColorStop(0,'rgba(255,255,255,.22)');gr.addColorStop(1,'rgba(0,0,0,.16)');g.fillStyle=gr;g.fillRect(-s/2,-s/2,s,s);
+  g.strokeStyle='#7d8388';g.lineWidth=s*.018;g.beginPath();g.moveTo(0,-.5*s);g.lineTo(0,.5*s);g.moveTo(-.5*s,-.08*s);g.lineTo(.5*s,-.08*s);g.stroke();
+  g.restore();
+  g.strokeStyle='#2c2f33';g.lineWidth=s*.04;shieldPath(g,s);g.stroke();
+  g.save();g.scale(s,s);g.lineWidth=.01;
+  if(id==='train'){
+    const sword=(a)=>{g.save();g.translate(0,.2);g.rotate(a);
+      g.fillStyle='#f2f2f0';g.strokeStyle='#40454a';g.lineWidth=.012;
+      g.beginPath();g.moveTo(-.032,-.02);g.lineTo(-.026,-.5);g.lineTo(0,-.57);g.lineTo(.026,-.5);g.lineTo(.032,-.02);g.closePath();g.fill();g.stroke();
+      g.strokeStyle='#cfd2d4';g.lineWidth=.01;g.beginPath();g.moveTo(0,-.04);g.lineTo(0,-.5);g.stroke();
+      g.fillStyle='#111';g.fillRect(-.105,-.025,.21,.045);g.fillRect(-.02,.02,.04,.14);
+      g.beginPath();g.arc(0,.185,.034,0,TAU);g.fill();g.restore()};
+    sword(-.62);sword(.62);
+  }else if(id==='survey'){
+    const B='#024789',W='#eaeaea';
+    g.save();g.translate(0,-.03);
+    g.strokeStyle=B;g.lineWidth=.035;g.beginPath();g.arc(0,0,.3,0,TAU);g.stroke();
+    for(let i=0;i<8;i++){const L=i%2?.2:.36,Wd=i%2?.06:.1;g.save();g.rotate(i*Math.PI/4);
+      g.beginPath();g.moveTo(0,-L);g.lineTo(Wd,0);g.lineTo(0,0);g.closePath();g.fillStyle=i%2?W:B;g.fill();g.strokeStyle='#1b2a3a';g.lineWidth=.008;g.stroke();
+      g.beginPath();g.moveTo(0,-L);g.lineTo(-Wd,0);g.lineTo(0,0);g.closePath();g.fillStyle=i%2?B:W;g.fill();g.stroke();g.restore()}
+    g.fillStyle='#eaeaea';g.strokeStyle=B;g.lineWidth=.02;g.beginPath();g.arc(0,0,.05,0,TAU);g.fill();g.stroke();
+    g.fillStyle=B;g.beginPath();g.moveTo(0,-.46);g.lineTo(.05,-.37);g.lineTo(-.05,-.37);g.closePath();g.fill();
+    g.restore();
+  }else if(id==='garrison'){
+    const R='#8c0205',W='#eaeaea';
+    g.save();g.translate(0,.02);
+    g.fillStyle=R;g.strokeStyle='#3a0a0b';g.lineWidth=.012;
+    g.fillRect(-.17,-.14,.34,.5);g.strokeRect(-.17,-.14,.34,.5);
+    g.fillRect(-.22,-.24,.44,.1);g.strokeRect(-.22,-.24,.44,.1);
+    for(let i=0;i<4;i++){g.fillRect(-.22+i*.12,-.36,.08,.12);g.strokeRect(-.22+i*.12,-.36,.08,.12)}
+    g.fillStyle=W;g.beginPath();g.moveTo(-.07,.36);g.lineTo(-.07,.12);g.arc(0,.12,.07,Math.PI,0);g.lineTo(.07,.36);g.closePath();g.fill();
+    g.strokeStyle=W;g.lineWidth=.012;for(const y of[-.02,.1,.22]){g.beginPath();g.moveTo(-.17,y);g.lineTo(-.1,y);g.moveTo(.1,y);g.lineTo(.17,y);g.stroke()}
+    g.fillStyle=W;g.fillRect(-.03,-.1,.06,.1);
+    g.fillStyle=R;g.fillRect(-.3,.34,.6,.06);g.strokeRect(-.3,.34,.6,.06);
+    g.restore();
+  }else{
+    const G='#275d22',D='#17391a',L='#e6e2c4';
+    g.save();g.translate(0,.0);
+    g.strokeStyle=L;g.lineWidth=.028;
+    for(const s of[-1,1]){g.beginPath();g.moveTo(s*.07,-.12);g.quadraticCurveTo(s*.2,-.24,s*.17,-.4);
+      g.moveTo(s*.15,-.22);g.lineTo(s*.3,-.27);g.moveTo(s*.18,-.33);g.lineTo(s*.31,-.42);g.moveTo(s*.175,-.4);g.lineTo(s*.14,-.5);g.stroke()}
+    g.fillStyle=G;g.strokeStyle=D;g.lineWidth=.012;
+    for(const s of[-1,1]){g.beginPath();g.ellipse(s*.17,-.1,.1,.045,s*-.5,0,TAU);g.fill();g.stroke()}
+    g.beginPath();g.moveTo(-.14,-.14);g.quadraticCurveTo(0,-.2,.14,-.14);g.lineTo(.1,.14);g.quadraticCurveTo(.1,.3,0,.36);g.quadraticCurveTo(-.1,.3,-.1,.14);g.closePath();g.fill();g.stroke();
+    g.fillStyle=D;for(const s of[-1,1]){g.beginPath();g.ellipse(s*.07,-.05,.022,.014,s*.3,0,TAU);g.fill()}
+    g.beginPath();g.ellipse(0,.31,.04,.025,0,0,TAU);g.fill();
+    g.strokeStyle=D;g.lineWidth=.008;g.beginPath();g.moveTo(0,-.16);g.lineTo(0,.2);g.stroke();
+    g.restore();
+  }
+  g.restore();g.restore();
+}
+
+function drawCloak(g,s,id){id=id||'train';const E=EMB.find(e=>e.id===id)||EMB[0];
+  const gr=g.createLinearGradient(0,0,s,0);gr.addColorStop(0,E.cloak2);gr.addColorStop(.5,E.cloak);gr.addColorStop(1,E.cloak2);g.fillStyle=gr;g.fillRect(0,0,s,s);
   for(let i=0;i<10;i++){const x=i*s/10+Math.random()*10;const g2=g.createLinearGradient(x,0,x+s/10,0);g2.addColorStop(0,'rgba(0,0,0,.18)');g2.addColorStop(.5,'rgba(255,255,255,.04)');g2.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=g2;g.fillRect(x,0,s/10,s)}
   for(let i=0;i<5000;i++){g.fillStyle=`rgba(${Math.random()<.5?255:0},${Math.random()<.5?255:0},${Math.random()<.5?255:0},.05)`;g.fillRect(Math.random()*s,Math.random()*s,1,3)}
-  drawEmblem(g,s/2,s*.34,s*.2,'#e3d6b0','#27493f');
+  drawFaction(g,id,s/2,s*.38,s*.46);
   g.fillStyle='rgba(0,0,0,.22)';g.fillRect(0,s-14,s,14);
 }
 function drawBanner(g,s){
@@ -714,7 +782,7 @@ function house(cx,cz,rot,w,d,floors,style,opts={}){
   const lx0=-w/2-.05,lx1=w/2+.05,lz0=-d/2-.05,lz1=totalD/2+zc+.05;
   addRotBox(cx,cz,rot,lx0,lx1,lz0,lz1,0,y0);
   roofs.push({cx,cz,c:Math.round(Math.cos(rot)),s:Math.round(Math.sin(rot)),Lr,Wr,zc,y0:y0-.05,rh,R:Math.hypot(Lr,Wr)+1});
-  BLD.push({x:cx,z:cz,r:Math.hypot(w,d)*.5,hp:3,ranges:rangesSince(_s),c0:_c0,c1:colliders.length,r0:_r0,r1:roofs.length,lp0:_l0,lp1:lampPts.length,dead:false});
+  BLD.push({x:cx,z:cz,r:Math.hypot(w,d)*.5,hp:3,hp0:3,h:y0+rh+1,ranges:rangesSince(_s),c0:_c0,c1:colliders.length,r0:_r0,r1:roofs.length,lp0:_l0,lp1:lampPts.length,dead:false});
   return {w,d,rot};
 }
 
@@ -769,14 +837,14 @@ function buildChurch(){
 }
 function buildPlaza(){
   // fountain
-  const fx=28,fz=24;BASE.identity();
+  const fx=48,fz=44;BASE.identity();
   put(MG.stone,new THREE.CylinderGeometry(3.4,3.6,.9,28),fx,.45,fz,0,C(0xc8c2b4));put(MG.stone,new THREE.CylinderGeometry(.5,.7,2.6,12),fx,1.6,fz,0,C(0xd8d2c4));put(MG.stone,new THREE.CylinderGeometry(1.5,.6,.45,18),fx,2.9,fz,0,C(0xd8d2c4));
   addBox(fx-3.6,fx+3.6,0,.9,fz-3.6,fz+3.6);
   const water=new THREE.Mesh(new THREE.CircleGeometry(3.1,28),new THREE.MeshStandardMaterial({color:C(0x4a8fa0),roughness:.05,metalness:.2,transparent:true,opacity:.82}));water.rotation.x=-Math.PI/2;water.position.set(fx,.78,fz);scene.add(water);world.water=water;
-  stall(-26,26,.1);stall(-12,36,-.1);stall(10,36,0);stall(34,-4,Math.PI/2);
-  wellProp(-34,-4);
+  stall(-48,46,.1);stall(-22,56,-.1);stall(22,56,0);stall(62,0,Math.PI/2);
+  wellProp(-62,-6);
   // plaza lamps
-  for(const [x,z] of[[-16,14],[16,14],[-16,-24],[16,-24],[-34,34],[34,34]])lamp(x,z);
+  for(const [x,z] of[[-42,42],[42,42],[-42,-42],[42,-42],[-60,20],[60,20]])lamp(x,z);
 }
 
 /* ============ wall ============ */
@@ -1033,15 +1101,21 @@ function buildForest(){
   if(PDL.length)inst(padG,new THREE.MeshStandardMaterial({color:C(0x4f8a3a),roughness:.8,side:THREE.DoubleSide}),PDL,false);
 }
 
+const FAC={
+ hall:[{id:'W',x:-570,z:0},{id:'N',x:0,z:-570},{id:'E',x:570,z:0}],
+ garr:[{id:'N',x:0,z:-300},{id:'E',x:300,z:0},{id:'S',x:72,z:300},{id:'W',x:-300,z:0}],
+ mp:{x:-92,z:-30},survey:{x:-76,z:366},castle:{x:0,z:0},emb:{x:-46,z:552}};
+const FAC_RES=[...FAC.hall.map(h=>({x:h.x,z:h.z,r:40})),...FAC.garr.map(h=>({x:h.x,z:h.z,r:38})),{x:FAC.mp.x,z:FAC.mp.z,r:36},{x:FAC.survey.x,z:FAC.survey.z,r:50},{x:0,z:0,r:50}];
+function facRes(x,z,m){m=m||0;for(const q of FAC_RES)if(Math.hypot(x-q.x,z-q.z)<q.r+m)return true;return false}
 const fieldList=[];
-const RES={'1,14':()=>buildStable(),'-1,13':()=>buildShop(),'1,13':()=>buildInn()};
+const RES={'1,14':()=>buildStable(),'-1,13':()=>buildShop(),'1,13':()=>buildInn(),'-1,12':()=>buildEmblemShop()};
 function district(d){
   const cell=d.cell,N=Math.ceil(d.b/cell)+1;
   for(let i=-N;i<=N;i++)for(let j=-N;j<=N;j++){
     const cx=i*cell,cz=j*cell,rr=Math.hypot(cx,cz);
     if(d.home&&i===-1&&j===14){house(HOME.x,HOME.z,0,11,HOME.d,1,'plain');lamp(HOME.x+4.8,HOME.z+HOME.d/2+3);continue}
     if(d.home&&RES[i+','+j]){RES[i+','+j]();continue}
-    if(rr>d.b||rr<d.a||(d.core&&Math.abs(i)<=1&&Math.abs(j)<=1)||nearGate(cx,cz)||(Math.abs(cx)<24&&cz>0))continue;
+    if(rr>d.b||rr<d.a||(d.core&&Math.abs(i)<=1&&Math.abs(j)<=1)||nearGate(cx,cz)||(Math.abs(cx)<24&&cz>0)||facRes(cx,cz))continue;
     const roll=rnd();
     if(roll<d.fp){fieldList.push({x:cx,z:cz,s:cell-8,ry:Math.floor(rnd()*2)*Math.PI/2,c:rnd()});continue}
     if(roll<d.fp+.13+d.yard){ // yard
@@ -1058,14 +1132,14 @@ function district(d){
   }
   // street props
   for(let k=0;k<d.props;k++){const an=rnd()*TAU,rd=d.a+Math.sqrt(rnd())*(d.b-d.a),x=Math.sin(an)*rd,z=Math.cos(an)*rd;
-    if((d.core&&Math.abs(x)<48&&Math.abs(z)<48)||nearGate(x,z,30)||(Math.abs(x)<20&&z>0)||!freeSpot(x,z,1.6))continue;BASE.identity();
+    if((d.core&&Math.abs(x)<48&&Math.abs(z)<48)||nearGate(x,z,30)||(Math.abs(x)<20&&z>0)||facRes(x,z,6)||!freeSpot(x,z,1.6))continue;BASE.identity();
     const t=rnd();
     if(t<.3)put(MG.prop,new THREE.CylinderGeometry(.4,.36,.85,10),x,.42,z,0,C(0x6a4a2e));
     else if(t<.55){put(MG.wood,boxGeo(1,.8,1,1),x,.4,z,rnd(),C(0x8a6a44));put(MG.wood,boxGeo(.8,.7,.8,1),x+.1,1.15,z,rnd(),C(0x7a5a3a))}
     else if(t<.7){put(MG.wood,boxGeo(2.4,.2,1.6,1),x,.9,z,0,C(0x6a4a2e));for(const s of[-1,1])put(MG.wood,new THREE.CylinderGeometry(.5,.5,.2,10),x+s*1.1,.5,z+.9,Math.PI/2,C(0x4a3a2a),0,Math.PI/2)}
     else{put(MG.prop,new THREE.CylinderGeometry(.9,.9,.9,10),x,.45,z,0,C(0xd2b45a));put(MG.prop,new THREE.CylinderGeometry(.9,.9,.9,10),x+1.8,.45,z+.4,0,C(0xc9aa50))}
   }
-  for(let i=-N;i<=N;i++)for(let j=-N;j<=N;j++){const x=(i+.5)*cell,z=(j+.5)*cell,rr=Math.hypot(x,z);if(rr>d.b||rr<d.a||(d.core&&Math.abs(x)<46&&Math.abs(z)<46)||((i+j)&1)||nearGate(x,z,30))continue;lamp(x,z)}
+  for(let i=-N;i<=N;i++)for(let j=-N;j<=N;j++){const x=(i+.5)*cell,z=(j+.5)*cell,rr=Math.hypot(x,z);if(rr>d.b||rr<d.a||(d.core&&Math.abs(x)<46&&Math.abs(z)<46)||((i+j)&1)||nearGate(x,z,30)||facRes(x,z,4))continue;lamp(x,z)}
 }
 function buildTown(){
   district({a:0,b:WALLS[0].R-24,cell:30,yard:0,fp:.12,props:50,core:true});
@@ -1263,7 +1337,7 @@ function buildSoldier(o){
   const sg=new THREE.Group();sg.position.set(.0,.4,-.12);torso.add(sg);
   const sgeo=new THREE.PlaneGeometry(.13,.55,2,10);sgeo.translate(0,-.275,0);
   const scarf=new THREE.Mesh(sgeo,scarfM);scarf.castShadow=true;sg.add(scarf);scarf.rotation.y=Math.PI;
-  return {root,rig,torso,head,arms,legs,eyes,pelvisY:.62,
+  return {root,rig,torso,head,arms,legs,eyes,pelvisY:.62,cloakM,
     cloak:{geo:cgeo,base:Float32Array.from(cgeo.attributes.position.array),mesh:cloak},
     scarf:{geo:sgeo,base:Float32Array.from(sgeo.attributes.position.array),mesh:scarf}};
 }
@@ -1767,25 +1841,20 @@ const audio=(()=>{
 /* ============ SOUND DIRECTOR ============ */
 function sfxAt(name,x,z,range,k){const d=Math.hypot(P.pos.x-x,P.pos.z-z);if(d>range)return;audio.sfx(name,(k||1)*Math.pow(1-d/range,1.4))}
 let musT=0,musCur=null;
-function regionAt(x,z){
-  const r=Math.hypot(x,z),zn=ZONE(r);
-  if(zn===0)return '월 시나';if(zn===1)return '월 로제';
-  if(zn===2){const a=Math.atan2(x,-z),q=Math.abs(a)<Math.PI/4?'북부':a>=Math.PI/4&&a<Math.PI*.75?'동부':Math.abs(a)>=Math.PI*.75?'남부':'서부';return '월 마리아 · '+q}
+let _q=null;
+function quadOf(x,z){ const a=Math.atan2(x,-z),M=.1,P4=Math.PI/4;
+  const raw=Math.abs(a)<P4?0:a>=P4&&a<P4*3?1:Math.abs(a)>=P4*3?2:3;
+  if(_q===null||_q===raw){_q=raw;return raw}
+  const ctr=[0,Math.PI/2,Math.PI,-Math.PI/2][raw];let d=Math.abs(a-ctr);if(d>Math.PI)d=2*Math.PI-d;
+  if(d<P4-M)_q=raw;return _q; }
+const QN=['북부','동부','남부','서부'];
+function regionAt(x,z){ const r=Math.hypot(x,z),zn=ZONE(r);
+  if(zn<=2){const nm=['월 시나','월 로제','월 마리아'][zn];return nm+' · '+QN[quadOf(x,z)]}
   if(Math.abs(x)<HX+120&&z>HZ-220)return '항구';
-  const th=themeAt(x,z);return th==='coast'?'바다':th==='desert'?'사막':'숲속';
-}
-const REG={cur:null,pend:null,t:0,last:-99};
-function updateRegion(dt){
-  if(state!=='play')return;
-  const c=regionAt(P.pos.x,P.pos.z);
-  if(c===REG.cur){REG.pend=null;return}
-  if(c!==REG.pend){REG.pend=c;REG.t=0}
-  REG.t+=dt;
-  if(REG.t>=(REG.cur===null?.6:1)&&time-REG.last>3){
-    REG.cur=c;REG.pend=null;REG.last=time;
-    const el=$('#region');el.textContent=c;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
-  }
-}
+  const th=themeAt(x,z);return th==='coast'?'바다':th==='desert'?'사막':'숲속'; }
+const REG={cur:null};
+function updateRegion(dt){ if(state!=='play')return; const c=regionAt(P.pos.x,P.pos.z); if(c===REG.cur)return; REG.cur=c;
+  const el=$('#region');el.textContent=c;el.classList.remove('show');void el.offsetWidth;el.classList.add('show'); }
 function themeAt(x,z){
   const r=Math.hypot(x,z),zn=ZONE(r);if(zn===0)return 'sina';if(zn===1)return 'rose';if(zn===2)return 'maria';
   const a=Math.atan2(x,z);if(r>COAST(a)*.62)return 'coast';if(r>DES0(a)+60)return 'desert';return 'field';
@@ -2373,8 +2442,9 @@ function destroyBuilding(b){
   spawnDebris(b.x,2,b.z,26,b.r*.7,BLD_COLS,true);
   for(let i=0;i<7;i++)puff(_a.set(b.x+(Math.random()-.5)*b.r,1+Math.random()*5,b.z+(Math.random()-.5)*b.r),_b.set((Math.random()-.5)*3,2+Math.random()*3,(Math.random()-.5)*3),b.r*.55,2.6,0xb9ae98);
   const d=Math.hypot(P.pos.x-b.x,P.pos.z-b.z);if(d<160){hitShake=Math.max(hitShake,.25*(1-d/160));audio.thunk&&audio.thunk()}
+  if(b.extra)for(const m of b.extra)m.visible=false;if(b.bar)b.bar.visible=false;if(b.onDestroy)b.onDestroy(b);
 }
-function damageBuilding(b,amt){if(b.dead)return;b.hp-=amt;if(b.hp<=0)destroyBuilding(b);else if(amt>=.9)puff(_a.set(b.x,3,b.z),_b.set(0,2,0),b.r*.5,1.6,0xb9ae98)}
+function damageBuilding(b,amt){if(b.dead)return;b.hp-=amt;b.hurtAt=time;if(b.hp<=0)destroyBuilding(b);else if(amt>=.9)puff(_a.set(b.x,3,b.z),_b.set(0,2,0),b.r*.5,1.6,0xb9ae98)}
 function destroyLamp(l){
   if(l.dead)return;l.dead=true;hideRanges(l.ranges);const v=lampPts[l.lp];if(v)v.dead=true;
   if(glow){const pa=glow.geometry.attributes.position;pa.setY(l.lp,-999);pa.needsUpdate=true}
@@ -2842,7 +2912,7 @@ function strikeResolve(t,a){
       screamAt(t.x,t.z);if(tg.k==='npc'&&time-(TCFG.lastEat||-99)>6){TCFG.lastEat=time;toast('…거인이 마을 사람을 붙잡았어요!',2400)}}
     return}
   if(a.kind==='stomp'||a.kind==='smash'||a.kind==='swat'||a.kind==='grab'){
-    const tg=a.target;
+    const tg=a.target;soldierStrike(t);
     if(tg&&tg.k==='gate'){damageGate(tg.w,1,t)}
     else if(tg&&tg.k==='bld'){damageBuilding(tg.ref,1);hitShake=Math.max(hitShake,.15)}
     else if(tg&&tg.k==='lamp'){destroyLamp(tg.ref)}
@@ -3311,6 +3381,7 @@ function initServices(){
   addService('stable',STB.x-13+3.2,paddockZ+9,Math.PI/2,7.5,{cloth:0x7a5a3a,legs:0x4a4a36,skin:0xd9a77f,hair:0x5a4a3a,hat:'straw',beard:true,role:'stable',trim:0x4a3320,scarf:0xa84a3a,eye:0x3a2a1a},'마구간지기','G · 말 고르기','말');
   addService('shop',SHP.nx,SHP.nz,0,6.8,{cloth:0x5a3a7a,legs:0x2a2230,skin:0xe2b48c,hair:0x8a8a88,apron:0xe8dcc8,hat:'wiz',hatc:0x4a2a6a,role:'shop',glasses:true,bag:true,trim:0xc79a3b,eye:0x3a5a8a,beard:true},'포션 상인','G · 포션 사기','약');
   addService('inn',INN.x-2.2,INN.z+6.6,0,6.8,{cloth:0xa04a3a,legs:0x3a2a22,skin:0xe0b48f,hair:0x2a1a10,apron:0xf2eadc,hat:'cook',role:'inn',towel:true,trim:0xf4dc9a,eye:0x2a4a2a},'여관 주인','G · 푹 쉬기','숙');
+  addService('emblem',EMS.nx,EMS.nz,0,6.8,{cloth:0x2f5a4a,legs:0x2a2a30,skin:0xe2b48c,hair:0x3a2a1a,hat:'cap',hatc:0x2f5a4a,trim:0xd2a64a,scarf:0xd2a64a,eye:0x3a5a8a},'문장소 담당관','G · 문장 바꾸기','문');
   HORSES.forEach((hd,i)=>{const px=STB.x-13,pz=paddockZ;const pos=[[px+9,pz+5],[px+14,pz+5],[px+19,pz+5],[px+11.5,pz+12.5],[px+16.5,pz+12.5]][i];
     const yaw=[-.5,.3,-.2,Math.PI*.9,Math.PI*1.1][i];const H=spawnHorse(hd,pos[0],pos[1],yaw,true);DISPLAY.push(H)});
 }
@@ -3429,7 +3500,8 @@ function openService(id){
     const items=POTS.map(pt=>{const it={name:pt.name+' ('+pt.key+'키)',desc:pt.desc+' · '+pt.price+'G · 보유 '+(P.pot[pt.k]||0),btn:'구매',keepOpen:true,fn:()=>{
       if(P.gold<pt.price){toast('골드가 부족해요.',1400);return}P.gold-=pt.price;audio.sfx('coin');P.pot[pt.k]++;it.desc=pt.desc+' · '+pt.price+'G · 보유 '+P.pot[pt.k];toast(pt.name+' 구매!',1200)}};return it});
     openPanel('포션 상인','어서 오세요! 골드는 거인을 처치하면 얻을 수 있어요. 구매한 포션은 숫자 키(1~4)로 써요.',items,'');
-  }else if(id==='inn'){
+  }else if(id==='emblem'){openEmblemPanel()}
+  else if(id==='inn'){
     openPanel('여관 주인','푹 쉬고 가세요. 체력과 가스, 그리고 내 말의 체력이 모두 회복돼요.',[{name:'숙박하기',desc:'무료 · 체력·가스·말 체력 전부 회복',btn:'쉬기',fn:innRest}],'');
   }
 }
@@ -3439,7 +3511,7 @@ function initUIx(){actEl=$('#act');actEl.addEventListener('click',doAct);$('#pCl
 function updateInteract(){
   const a=actEl;let best=null,bd=1e9;
   for(const s of SVC){const d=Math.hypot(P.pos.x-s.x,P.pos.z-s.z);if(d<s.r&&d<bd&&P.pos.y-0<6){bd=d;best=s}}
-  if(best){actCur={label:'G · '+({stable:'마구간지기와 대화',shop:'포션 상인과 대화',inn:'여관 주인과 대화'})[best.id],fn:()=>openService(best.id)}}
+  if(best){actCur={label:'G · '+({stable:'마구간지기와 대화',shop:'포션 상인과 대화',inn:'여관 주인과 대화',emblem:'문장소 담당관과 대화'})[best.id],fn:()=>openService(best.id)}}
   else if(P.horse){actCur={label:'H · 말에서 내리기',fn:()=>dismountHorse(true)}}
   else if(P.own&&P.own.state==='idle'&&Math.hypot(P.own.x-P.pos.x,P.own.z-P.pos.z)<8){actCur={label:'H · 말 타기',fn:()=>mountHorse(P.own)}}
   else actCur=null;
@@ -3471,12 +3543,14 @@ function damagePlayer(n,dx,dz,kb){
   if(P.hp<=0)gameOver();
 }
 function gameOver(){
-  if(state==='over')return;state='over';if(P.own)removeHorse(P.own);P.horse=null;$hud.hidden=true;want[0]=want[1]=false;mouse.l=mouse.r=false;joy.x=joy.y=0;keys.Space=false;keys.ShiftLeft=false;ATK.t=0;
+  if(state==='over')return;state='over';
+  {const h2=document.querySelector('#over h2'),pp=document.querySelector('#over p'),bt=$('#retryBtn');if(FOVER.castle){h2.textContent='성이 무너졌습니다';pp.textContent='월 시나의 중앙 성이 거인에게 파괴되었어요. 처음부터 다시 시작합니다.';bt.textContent='처음부터 다시'}else{h2.textContent='GAME OVER';pp.textContent='거인에게 당했어요… 다시 도전해 보세요.';bt.textContent='다시 시작'}}
+if(P.own)removeHorse(P.own);P.horse=null;$hud.hidden=true;want[0]=want[1]=false;mouse.l=mouse.r=false;joy.x=joy.y=0;keys.Space=false;keys.ShiftLeft=false;ATK.t=0;
   {const tc=$('#touch');if(tc)tc.hidden=true}
   try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
   $('#over').hidden=false;audio.music(null);audio.danger(0);audio.sfx('gameover');
 }
-function restartAfterDeath(){musCur=null;musT=0;for(const w of WALLS)if(w.broken)repairGate(w);
+function restartAfterDeath(){if(FOVER.castle){location.reload();return}musCur=null;musT=0;for(const w of WALLS)if(w.broken)repairGate(w);
   $('#over').hidden=true;clearTitans();P.hp=P.hpMax;P.inv=1.5;P.hurt=0;
   for(const h of hooks)h.state='idle';respawn();startGame();
 }
@@ -3491,31 +3565,513 @@ function updateHud(dt){
 function radarDots(){
   const c=mapSize/2;
   for(const t of liveT){if(Math.hypot(t.x-P.pos.x,t.z-P.pos.z)>420)continue;const x=t.x*mapS,y=t.z*mapS;rg.fillStyle='#ff5a40';rg.beginPath();rg.arc(x,y,1.7,0,TAU);rg.fill()}
+  for(const s of SOLD){if(s.dead)continue;if(Math.hypot(s.x-P.pos.x,s.z-P.pos.z)>420)continue;rg.fillStyle=s.fid==='mp'?'#5fbf55':s.fid==='garrison'?'#d4565a':'#9ad0b4';rg.fillRect(s.x*mapS-1,s.z*mapS-1,2,2)}
   if(MAPSEEN.fac){rg.fillStyle='#d2a64a';rg.fillRect(FACT.x*mapS-1.5,FACT.z*mapS-1.5,3,3)}
   rg.fillStyle='#58b3a0';SVC.forEach((sv,i)=>{if(MAPSEEN.svc[i])rg.fillRect(sv.x*mapS-1,sv.z*mapS-1,2,2)});
 }
 function updateWorld(dt){
-  updateTitans(dt);updatePeople(dt);updateAnimals(dt);updateDebris(dt);updateFactory(dt);updateServices(dt);updateHorses(dt);flushDirty();updateHud(dt);
+  updateTitans(dt);updatePeople(dt);updateAnimals(dt);updateDebris(dt);updateFactory(dt);updateServices(dt);updateHorses(dt);updateFactions(dt);flushDirty();updateHud(dt);
 }
-function initLife(){initDebris();initTitanMats();initPeople();initAnimals();initServices();initUIx();seedTitans();
-  window.SIM.dbg={regionAt,glbFacing,glbLoad,GLBC,soldier,armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
+function initLife(){initDebris();initTitanMats();initPeople();initAnimals();initServices();initUIx();initSoldiers();seedTitans();
+  window.SIM.dbg={SOLD,FBLD,GROUPS,FAC,EMB,setEmblem,spill,updateSoldiers,updateFactions,castleFall,soldierStrike,quadRaw,regionAt,glbFacing,glbLoad,GLBC,soldier,armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
 
+
+/* ================== v18 · FACTIONS (emblems, halls, soldiers, castle, HP bars) ================== */
+const FSHIELD={},FFLAG={};
+function facTex(id){if(FSHIELD[id])return FSHIELD[id];const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');drawFaction(g,id,128,128,236);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return FSHIELD[id]=t}
+function flagTex(id){if(FFLAG[id])return FFLAG[id];const E=EMB.find(e=>e.id===id);const c=document.createElement('canvas');c.width=200;c.height=320;const g=c.getContext('2d');
+  g.clearRect(0,0,200,320);g.fillStyle=E.cloak;g.beginPath();g.moveTo(0,0);g.lineTo(200,0);g.lineTo(200,300);g.lineTo(100,262);g.lineTo(0,300);g.closePath();g.fill();
+  g.strokeStyle='#e8d08a';g.lineWidth=7;g.beginPath();g.moveTo(8,8);g.lineTo(192,8);g.lineTo(192,284);g.lineTo(100,250);g.lineTo(8,284);g.closePath();g.stroke();
+  drawFaction(g,id,100,128,176);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return FFLAG[id]=t}
+const FLAGS=[];
+function flagMesh(id,w,h,x,y,z,ry,b){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:flagTex(id),side:THREE.DoubleSide,transparent:true,alphaTest:.3,roughness:.85}));
+  m.position.set(x,y,z);m.rotation.y=ry||0;scene.add(m);if(b)b.extra.push(m);FLAGS.push({m,ry:ry||0,ph:Math.random()*6,x,z});return m}
+function plaque(id,w,h,x,y,z,ry,b){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:facTex(id),transparent:true,alphaTest:.08,roughness:.6,emissive:0x222222}));
+  m.position.set(x,y,z);m.rotation.y=ry||0;scene.add(m);if(b)b.extra.push(m);return m}
+function plate(txt,w,h,x,y,z,ry,col,bg,b){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:mkCanvasTex(512,Math.round(512*h/w),(g,W,H)=>{g.fillStyle=bg;g.fillRect(0,0,W,H);g.strokeStyle=col;g.lineWidth=6;g.strokeRect(8,8,W-16,H-16);g.fillStyle=col;g.textAlign='center';g.font="800 "+Math.round(H*.55)+"px 'Noto Sans KR','Malgun Gothic',sans-serif";g.fillText(txt,W/2,H*.68)}),roughness:.7,side:THREE.DoubleSide}));
+  m.position.set(x,y,z);m.rotation.y=ry||0;scene.add(m);if(b)b.extra.push(m);return m}
+const WGEO=new THREE.PlaneGeometry(1.3,2);
+/* faction building bookkeeping */
+const FBLD=[];
+function fbBegin(){return {s:snapMG(),c0:colliders.length,r0:roofs.length,l0:lampPts.length}}
+function fbEnd(t,o){const b={x:o.x,z:o.z,r:o.r,hp:o.hp,hp0:o.hp,ranges:rangesSince(t.s),c0:t.c0,c1:colliders.length,r0:t.r0,r1:roofs.length,lp0:t.l0,lp1:lampPts.length,dead:false,
+  kind:o.kind,fid:o.fid,name:o.name,h:o.h,barY:o.barY||o.h+3,extra:[],fac:true,hurtAt:-99};BLD.push(b);FBLD.push(b);return b}
+function stoneBox(cx,cz,w,h,d,lx,y,lz,col,coll){put(MG.stone,boxGeo(w,h,d,3),cx+lx,y+h/2,cz+lz,0,col);if(coll!==false)addBox(cx+lx-w/2,cx+lx+w/2,y,y+h,cz+lz-d/2,cz+lz+d/2)}
+function merlons(cx,cz,w,d,y,col){const n=Math.round(w/3);for(let i=0;i<n;i++){const x=-w/2+1.5+i*(w-3)/(n-1);for(const s of[-1,1])put(MG.stone,boxGeo(1.4,1.5,1.1,1),cx+x,y+.75,cz+s*(d/2-.55),0,col)}
+  const m=Math.round(d/3);for(let i=1;i<m-1;i++){const z=-d/2+1.5+i*(d-3)/(m-1);for(const s of[-1,1])put(MG.stone,boxGeo(1.1,1.5,1.4,1),cx+s*(w/2-.55),y+.75,cz+z,0,col)}}
+function tower(cx,cz,lx,lz,r,h,roofCol,coneH,bodyCol){
+  put(MG.stone,new THREE.CylinderGeometry(r,r*1.08,h,14),cx+lx,h/2,cz+lz,0,bodyCol);
+  put(MG.stone,new THREE.CylinderGeometry(r*1.18,r*1.18,.6,14),cx+lx,h-.3,cz+lz,0,C(0xcfc8b8));
+  put(MG.roof,new THREE.ConeGeometry(r*1.25,coneH,14),cx+lx,h+coneH/2,cz+lz,0,roofCol);
+  for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4;put(MG.winD,WGEO,cx+lx+Math.sin(a)*(r+.04),h*.55,cz+lz+Math.cos(a)*(r+.04),a)}
+  addBox(cx+lx-r,cx+lx+r,0,h,cz+lz-r,cz+lz+r);addBox(cx+lx-r*.6,cx+lx+r*.6,h,h+coneH*.6,cz+lz-r*.6,cz+lz+r*.6);
+}
+function winRows(cx,cz,w,d,h,fl,front){
+  const fh=h/fl,nx=Math.max(2,Math.floor(w/4.6));
+  for(let f=0;f<fl;f++){const yc=fh*(f+.52)+.9;
+    for(let i=0;i<nx;i++){const x=-w/2+w/nx*(i+.5);
+      if(front&&f===0&&Math.abs(x)<3)continue;
+      put(MG.winD,WGEO,cx+x,yc,cz+d/2+.05,0);put(MG.winD,WGEO,cx+x,yc,cz-d/2-.05,Math.PI);
+      if(f===0||(i%2===0&&rnd()<.5)){} }
+    const nz=Math.max(1,Math.floor(d/5));for(let i=0;i<nz;i++){const z=-d/2+d/nz*(i+.5);put(MG.winD,WGEO,cx+w/2+.05,yc,cz+z,Math.PI/2);put(MG.winD,WGEO,cx-w/2-.05,yc,cz+z,-Math.PI/2)}}
+}
+function gableRoof(cx,cz,w,d,y0,rh,tint,gcol){
+  const Lr=w/2+.8,Wr=d/2+.8;put(MG.roof,roofGeo(Lr,Wr,rh),cx,y0-.05,cz,0,tint);put(MG.roof,boxGeo(Lr*2+.1,.3,.5,2),cx,y0+rh,cz,0,C(0x3a3a40));
+  for(const sx of[-1,1])put(MG.plaster,gableGeo(Wr,rh,sx<0),cx+sx*w/2,y0-.05,cz,0,gcol);
+  roofs.push({cx,cz,c:1,s:0,Lr,Wr,zc:0,y0:y0-.05,rh,R:Math.hypot(Lr,Wr)+1});
+}
+function frontDoor(cx,cz,d,dw,dh){put(MG.door,new THREE.PlaneGeometry(dw,dh),cx,dh/2+.1,cz+d/2+.06,0);
+  put(MG.stone,boxGeo(dw+1.6,.7,.8,2),cx,dh+.3,cz+d/2+.2,0,C(0xd6cfc0));for(const s of[-1,1])put(MG.stone,boxGeo(.7,dh,.8,2),cx+s*(dw/2+.5),dh/2,cz+d/2+.2,0,C(0xcfc8b8));
+  for(let i=0;i<3;i++)put(MG.stone,boxGeo(dw+2.6+i*1.2,.25,1.4+i*.8,2),cx,.12+ (2-i)*.0+i*.0,cz+d/2+.8+i*.5,0,C(0xaaa397))}
+function yardFence(cx,zA,zB,hw,col){const rail=(ax,az,bx,bz)=>{const l=Math.hypot(bx-ax,bz-az),an=Math.atan2(bx-ax,bz-az);put(MG.wood,boxGeo(.14,.16,l,1),(ax+bx)/2,1.3,(az+bz)/2,an,col);put(MG.wood,boxGeo(.14,.16,l,1),(ax+bx)/2,.75,(az+bz)/2,an,col)};
+  const seg=[[cx-hw,zA,cx-hw,zB],[cx+hw,zA,cx+hw,zB],[cx-hw,zB,cx+hw,zB]];
+  for(const [ax,az,bx,bz] of seg){rail(ax,az,bx,bz);const n=Math.max(1,Math.round(Math.hypot(bx-ax,bz-az)/3));for(let i=0;i<=n;i++)put(MG.wood,boxGeo(.22,1.6,.22,1),ax+(bx-ax)*i/n,.8,az+(bz-az)*i/n,0,C(0x3a2a1c))}
+  addBox(cx-hw-.2,cx-hw+.2,0,1.4,zA,zB);addBox(cx+hw-.2,cx+hw+.2,0,1.4,zA,zB);addBox(cx-hw,cx+hw,0,1.4,zB-.2,zB+.2)}
+function dummies(cx,cz,n,span){for(let i=0;i<n;i++){const x=cx-span/2+span*i/Math.max(1,n-1);put(MG.wood,boxGeo(.22,2.1,.22,1),x,1.05,cz,0,C(0x6a4a2e));put(MG.wood,boxGeo(1.2,.18,.18,1),x,1.6,cz,0,C(0x6a4a2e));put(MG.prop,new THREE.CylinderGeometry(.34,.4,.9,8),x,1.25,cz,0,C(0xc9aa50));put(MG.prop,new THREE.SphereGeometry(.26,8,6),x,2.05,cz,0,C(0xc9aa50))}}
+function torchLamp(x,z){lamp(x,z)}
+
+/* ---- 훈련병단 훈련소 (Maria W/N/E) ---- */
+function buildTrainHall(h){
+  const cx=h.x,cz=h.z,w=34,d=22,fl=2,H=9.6,t=fbBegin();
+  const wall=C(0xd8dccb),trim=C(0x35503f);
+  put(MG.stone,boxGeo(w+1,1.2,d+1,3),cx,.6,cz,0,C(0x8d8a80));
+  put(MG.plaster,boxGeo(w,H,d,3),cx,1.2+H/2-.3,cz,0,wall);
+  for(const sx of[-1,1])for(const sz of[-1,1])put(MG.stone,boxGeo(1.3,H+.6,1.3,1.5),cx+sx*w/2,H/2+.3,cz+sz*d/2,0,C(0xc9cbbc));
+  for(let f=1;f<fl;f++)for(const s of[-1,1])put(MG.wood,boxGeo(w+.3,.4,.3,2),cx,1.2+f*H/fl-.5,cz+s*(d/2+.1),0,trim);
+  winRows(cx,cz,w,d,H-1.2,fl,true);
+  frontDoor(cx,cz,d,3.6,5.4);
+  gableRoof(cx,cz,w,d,H+.9,6.4,C(0x7fb097),wall);
+  addRotBox(cx,cz,0,-w/2,w/2,-d/2,d/2,0,H+1);
+  // chimney-like watch turrets
+  for(const sx of[-1,1]){tower(cx,cz,sx*(w/2+1.6),-d/2+1,2.3,13,C(0x4f8a6c),6,C(0xd0d3c2))}
+  // crossed-sword gable ornament + big plaque
+  const b=fbEnd(t,{x:cx,z:cz,r:Math.hypot(w,d)*.5,hp:12,kind:'train',fid:'train',name:'훈련병단 훈련소',h:H+7,barY:H+10});
+  plaque('train',6.6,7.2,cx,H*.62+1.5,cz+d/2+.5,0,b);
+  for(const s of[-1,1])flagMesh('train',2.2,3.8,cx+s*9,H-1.2,cz+d/2+.35,0,b);
+  for(const s of[-1,1])flagMesh('train',2.2,3.8,cx+s*(w/2-.8),H*.55,cz+d/2+.35,0,b);
+  for(const s of[-1,1]){put(MG.metal,boxGeo(.14,7,.14,1),cx+s*(w/2-.4),H+4.6,cz,0,C(0x222222));flagMesh('train',2.6,4.2,cx+s*(w/2-.4)+0,H+6.4,cz+1.5,Math.PI/2,b)}
+  plate('훈 련 병 단',8,1.5,cx,H+.2,cz+d/2+.7,0,'#e3d6b0','#2f5a4a',b);
+  // yard
+  const zy=cz+d/2+3;yardFence(cx,zy+1,zy+19,19,C(0x6a4a2e));dummies(cx,zy+9,5,28);
+  for(let i=0;i<2;i++){const x=cx+(i?-1:1)*14;put(MG.wood,boxGeo(3.2,.2,.6,1),x,1.0,zy+14,0,C(0x6a4a2e));for(let k=0;k<5;k++)put(MG.metal,boxGeo(.06,1.3,.06,1),x-1.2+k*.6,1.8,zy+14,0,C(0xc8ccd0),0,.15)}
+  for(const sx of[-1,1]){lamp(cx+sx*(w/2+4),cz+d/2+4);lamp(cx+sx*19,zy+20)}
+  b.yard={x:cx,z:zy+9.5};b.door={x:cx,z:cz+d/2+1.5};return b}
+
+/* ---- 주둔병단 요새 (Rose N/E/S/W) ---- */
+function buildGarrHall(h){
+  const cx=h.x,cz=h.z,w=44,d=28,H=15,t=fbBegin(),wall=C(0xb4a89a);
+  put(MG.stone,boxGeo(w+1.4,1.6,d+1.4,3),cx,.8,cz,0,C(0x7a746a));
+  stoneBox(cx,cz,w,H,d,0,0,0,wall);
+  for(let i=1;i<4;i++)put(MG.stone,boxGeo(w+.4,.5,d+.4,2),cx,i*H/4,cz,0,C(0xcfc8b8));
+  for(const sx of[-1,1])for(let k=-1;k<=1;k+=2)put(MG.stone,boxGeo(2,H*.82,1.4,2),cx+sx*(w/2+.9),H*.41,cz+k*d*.28,0,C(0x9a9286));
+  winRows(cx,cz,w,d,H-3,2,true);
+  merlons(cx,cz,w,d,H,C(0xcbc5b8));
+  for(const sx of[-1,1])for(const sz of[-1,1])tower(cx,cz,sx*w/2,sz*d/2,4.2,H+9,C(0x8c1f22),11,C(0xbdb2a3));
+  frontDoor(cx,cz,d,4.4,7);
+  put(MG.metal,boxGeo(4.2,6.6,.25,1),cx,3.4,cz+d/2+.25,0,C(0x2a2622));
+  const b=fbEnd(t,{x:cx,z:cz,r:Math.hypot(w,d)*.5,hp:28,kind:'garr',fid:'garrison',name:'주둔병단 요새',h:H+20,barY:H+26});
+  plaque('garrison',8.4,9.2,cx,H*.62,cz+d/2+.5,0,b);
+  for(const s of[-1,1])flagMesh('garrison',2.8,5,cx+s*10,H*.55,cz+d/2+.4,0,b);
+  for(const s of[-1,1])for(const z of[-1,1]){put(MG.metal,boxGeo(.16,8,.16,1),cx+s*w/2,H+9+11+3.5,cz+z*d/2,0,C(0x222222));flagMesh('garrison',3,4.6,cx+s*w/2+0,H+9+11+4.5,cz+z*d/2+1.6,Math.PI/2,b)}
+  plate('주 둔 병 단',9,1.6,cx,H*.9,cz+d/2+.7,0,'#eadfcd','#6c2327',b);
+  for(const sx of[-1,1]){lamp(cx+sx*(w/2+4),cz+d/2+5);for(let k=0;k<3;k++)put(MG.prop,new THREE.CylinderGeometry(.45,.4,.9,8),cx+sx*(8+k*1.1),.45,cz+d/2+2.3,0,C(0x6a4a2e))}
+  b.yard={x:cx,z:cz+d/2+8};b.door={x:cx,z:cz+d/2+2};return b}
+
+/* ---- 헌병단 본부 (Sina) ---- */
+function buildMPHall(h){
+  const cx=h.x,cz=h.z,w=48,d=32,fl=3,H=16.5,t=fbBegin(),wall=C(0xf1efe8);
+  put(MG.stone,boxGeo(w+1.4,1.5,d+1.4,3),cx,.75,cz,0,C(0xa9a79d));
+  put(MG.plaster,boxGeo(w,H,d,3),cx,1.5+H/2-.75,cz,0,wall);
+  for(let f=1;f<fl;f++)for(const s of[-1,1])put(MG.stone,boxGeo(w+.4,.45,.35,2),cx,1.5+f*H/fl-.7,cz+s*(d/2+.1),0,C(0xd6d2c4));
+  for(let i=0;i<=8;i++)put(MG.stone,boxGeo(1,H,.7,1.5),cx-w/2+i*w/8,H/2,cz+d/2+.3,0,C(0xe2dfd3));
+  winRows(cx,cz,w,d,H-1.5,fl,true);
+  frontDoor(cx,cz,d,4.6,7.2);
+  gableRoof(cx,cz,w,d,H+.8,8.5,C(0x4d9a58),wall);
+  addRotBox(cx,cz,0,-w/2,w/2,-d/2,d/2,0,H+1);
+  // clock tower (center, rear of facade)
+  put(MG.stone,boxGeo(8,16,8,3),cx,H+8,cz-2,0,C(0xece9de));put(MG.stone,boxGeo(8.8,.6,8.8,2),cx,H+16,cz-2,0,C(0xd6d2c4));
+  for(let k=0;k<4;k++){const a=k*Math.PI/2;put(MG.clock,new THREE.CircleGeometry(2.2,24),cx+Math.sin(a)*4.05,H+11,cz-2+Math.cos(a)*4.05,a)}
+  put(MG.roof,new THREE.ConeGeometry(6.2,11,4),cx,H+16+5.5,cz-2,Math.PI/4,C(0x4d9a58));put(MG.metal,new THREE.SphereGeometry(.6,10,8),cx,H+33,cz-2,0,C(0xd2a64a));
+  addBox(cx-4,cx+4,H,H+16,cz-6,cz+2);addBox(cx-2.5,cx+2.5,H+16,H+25,cz-4.5,cz+.5);
+  for(const sx of[-1,1])tower(cx,cz,sx*(w/2+2),d/2-1,3.4,H+5,C(0x4d9a58),8,C(0xe8e5da));
+  const b=fbEnd(t,{x:cx,z:cz,r:Math.hypot(w,d)*.5,hp:40,kind:'mp',fid:'mp',name:'헌병단 본부',h:H+26,barY:H+36});
+  plaque('mp',8.8,9.6,cx,H*.66,cz+d/2+.55,0,b);
+  for(const s of[-1,1])flagMesh('mp',2.8,5,cx+s*11,H*.58,cz+d/2+.55,0,b);
+  for(const s of[-1,1])flagMesh('mp',3,4.6,cx+s*(w/2+2)+0,H+5+8+4.5,cz+d/2-1+1.8,0,b);
+  plate('헌 병 단',8,1.6,cx,H+.4,cz+d/2+.9,0,'#e9e4cc','#275d22',b);
+  const zy=cz+d/2+3;yardFence(cx,zy+.5,zy+12,22,C(0xe8e4d4));dummies(cx,zy+6,4,24);
+  put(MG.wood,boxGeo(10,3,5,2),cx+w/2+6,1.5,cz-4,0,C(0xe8e4d4));put(MG.roof,roofGeo(5.6,3,2),cx+w/2+6,3,cz-4,0,C(0x4d9a58)); // stable lean-to
+  addBox(cx+w/2+1,cx+w/2+11,0,3,cz-6.5,cz-1.5);
+  for(const sx of[-1,1])lamp(cx+sx*(w/2+4),cz+d/2+5);
+  b.yard={x:cx,z:zy+6};b.door={x:cx,z:cz+d/2+1.5};return b}
+
+/* ---- 조사병단 본부 (near Rose gate, empty) ---- */
+function buildSurveyHall(h){
+  const cx=h.x,cz=h.z,t=fbBegin(),BL=C(0x1f5aa0),WH_=C(0xeef2f6),stn=C(0xdfe4ea);
+  // central block
+  put(MG.stone,boxGeo(26,2,24,3),cx,1,cz,0,C(0x9aa3ad));
+  stoneBox(cx,cz,22,19,20,0,2,0,stn);
+  for(const s of[-1,1]){stoneBox(cx,cz,22,11,16,s*21,2,2,stn);gableRoof(cx+s*21,cz+2,22,16,13,5.6,BL,stn)}
+  winRows(cx+0,cz,22,20,16,2,true);for(const s of[-1,1])winRows(cx+s*21,cz+2,22,16,9,1,false);
+  frontDoor(cx,cz,20,4.2,6.8);
+  // blue pitched roof on block
+  put(MG.roof,new THREE.ConeGeometry(16,12,4),cx,21+6,cz,Math.PI/4,BL);addBox(cx-9,cx+9,21,28,cz-9,cz+9);
+  // tall beacon tower (recognisable from afar)
+  put(MG.stone,new THREE.CylinderGeometry(5,6.2,34,16),cx,21+17,cz-2,0,stn);addBox(cx-5.8,cx+5.8,21,55,cz-7.8,cz+3.8);
+  for(const y of[26,38,50])put(MG.stone,new THREE.CylinderGeometry(6.6,6.6,.7,16),cx,y,cz-2,0,C(0x1f5aa0));
+  put(MG.stone,new THREE.CylinderGeometry(7.4,7.4,1.4,16),cx,55.7,cz-2,0,WH_);
+  put(MG.roof,new THREE.ConeGeometry(7,16,16),cx,64.4,cz-2,0,BL);put(MG.metal,boxGeo(.3,8,.3,1),cx,75,cz-2,0,C(0xd8dce0));
+  put(MG.lantern,new THREE.SphereGeometry(1.1,10,8),cx,57.3,cz-2,0);
+  for(const s of[-1,1])for(const z of[-1,1])tower(cx,cz,cx*0+s*35.5,z*7,3.2,15,BL,8,stn);
+  const b=fbEnd(t,{x:cx,z:cz,r:34,hp:36,kind:'survey',fid:'survey',name:'조사병단 본부',h:75,barY:80});
+  plaque('survey',9,9.8,cx,19.5,cz+10.6,0,b);
+  for(let k=0;k<4;k++){const a=k*Math.PI/2;plaque('survey',8,8.8,cx+Math.sin(a)*6.35,46,cz-2+Math.cos(a)*6.35,a,b)}
+  for(const s of[-1,1]){flagMesh('survey',3,5.4,cx+s*8,13,cz+10.4,0,b);flagMesh('survey',3,5.4,cx+s*21,9,cz+10.4,0,b)}
+  put(MG.metal,boxGeo(.2,12,.2,1),cx,81,cz-2,0,C(0x222222));flagMesh('survey',4.2,6.6,cx+2.2,77,cz-2,0,b);
+  plate('조 사 병 단',9,1.6,cx,19.8+10.5,cz+10.9,0,'#eaeaea','#024789',b);
+  for(const s of[-1,1]){lamp(cx+s*14,cz+13);lamp(cx+s*30,cz+11)}
+  b.door={x:cx,z:cz+11};return b}
+
+/* ---- 중앙 성 (Sina, game over when destroyed) ---- */
+function buildCastle(h){
+  const cx=h.x,cz=h.z,t=fbBegin(),wh=C(0xf4f2ec),wh2=C(0xe6e3da),roof=C(0x2c4a7c);
+  put(MG.stone,boxGeo(60,1.8,60,4),cx,.9,cz,0,C(0xb5b2a8));addBox(cx-30,cx+30,0,1.8,cz-30,cz+30);
+  for(let i=0;i<4;i++)put(MG.stone,boxGeo(18+i*3.6,.4,3.2,2),cx,.2+i*.45,cz+31+ (3-i)*.7,0,C(0xaaa397));
+  stoneBox(cx,cz,38,46,38,0,1.8,0,wh);
+  for(let i=1;i<4;i++)put(MG.stone,boxGeo(38.6,.7,38.6,2),cx,1.8+i*11.5,cz,0,wh2);
+  merlons(cx,cz,38,38,47.8,wh2);
+  for(let f=0;f<4;f++)for(let i=0;i<5;i++){const x=-14+i*7,y=7.5+f*11.5;for(const s of[-1,1]){put((f+i)%3?MG.winD:MG.winL,WGEO,cx+x,y,cz+s*19.06,s>0?0:Math.PI);put(MG.winD,WGEO,cx+s*19.06,y,cz+x,s>0?Math.PI/2:-Math.PI/2)}}
+  put(MG.door,new THREE.PlaneGeometry(6.4,10),cx,5.1,cz+19.08,0);put(MG.stone,boxGeo(9.4,1,1.2,2),cx,10.4,cz+19.6,0,wh2);for(const s of[-1,1])put(MG.stone,boxGeo(1,10.2,1.2,2),cx+s*4.4,5.1,cz+19.6,0,wh2);
+  for(const sx of[-1,1])for(const sz of[-1,1]){const lx=sx*20,lz=sz*20;
+    put(MG.stone,new THREE.CylinderGeometry(6,6.4,62,16),cx+lx,31,cz+lz,0,wh);put(MG.stone,new THREE.CylinderGeometry(7,7,.9,16),cx+lx,62.4,cz+lz,0,wh2);
+    for(const y of[16,32,48])put(MG.stone,new THREE.CylinderGeometry(6.5,6.5,.6,16),cx+lx,y,cz+lz,0,wh2);
+    put(MG.roof,new THREE.ConeGeometry(7.6,22,16),cx+lx,74,cz+lz,0,roof);put(MG.metal,new THREE.SphereGeometry(.7,8,6),cx+lx,85.4,cz+lz,0,C(0xd2a64a));
+    for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4;for(const y of[20,36,52])put(MG.winD,WGEO,cx+lx+Math.sin(a)*6.05,y,cz+lz+Math.cos(a)*6.05,a)}
+    addBox(cx+lx-6.2,cx+lx+6.2,0,62,cz+lz-6.2,cz+lz+6.2);addBox(cx+lx-4,cx+lx+4,62,80,cz+lz-4,cz+lz+4)}
+  // central spire
+  put(MG.stone,boxGeo(18,26,18,3),cx,47.8+13,cz,0,wh);put(MG.stone,boxGeo(19,.8,19,2),cx,47.8+26,cz,0,wh2);addBox(cx-9,cx+9,48,74,cz-9,cz+9);
+  put(MG.stone,new THREE.CylinderGeometry(6,7,22,16),cx,74+11,cz,0,wh);put(MG.roof,new THREE.ConeGeometry(8,30,16),cx,96+15,cz,0,roof);
+  put(MG.metal,new THREE.SphereGeometry(1,10,8),cx,127,cz,0,C(0xd2a64a));put(MG.metal,boxGeo(.3,9,.3,1),cx,131.5,cz,0,C(0xd2a64a));put(MG.metal,boxGeo(2.6,.3,.3,1),cx,133,cz,0,C(0xd2a64a));
+  addBox(cx-6,cx+6,74,96,cz-6,cz+6);addBox(cx-3,cx+3,96,118,cz-3,cz+3);
+  for(let k=0;k<4;k++){const a=k*Math.PI/2;put(MG.clock,new THREE.CircleGeometry(3.4,24),cx+Math.sin(a)*7.05,85,cz+Math.cos(a)*7.05,a)}
+  const b=fbEnd(t,{x:cx,z:cz,r:34,hp:70,kind:'castle',fid:'castle',name:'중앙 성',h:135,barY:112});
+  for(const s of[-1,1])for(let k=0;k<2;k++){const m=new THREE.Mesh(new THREE.PlaneGeometry(4,12),new THREE.MeshStandardMaterial({map:T.banner,side:THREE.DoubleSide,roughness:.9}));m.position.set(cx+s*10,34,cz+19.3);m.rotation.y=0;scene.add(m);b.extra.push(m)}
+  plate('월 시나 성',14,2.6,cx,43,cz+19.7,0,'#f0e2b0','#2c4a7c',b);
+  for(const s of[-1,1]){lamp(cx+s*12,cz+36);lamp(cx+s*26,cz+34)}
+  b.door={x:cx,z:cz+36};return b}
+
+/* ---- 문장소 (Maria, near entrance) ---- */
+const EMS={x:-46,z:552};
+function buildEmblemShop(){
+  const x=EMS.x,z=EMS.z;house(x,z,0,13,10,2,'tudor');BASE.identity();
+  const fz=z+5,b=BLD[BLD.length-1];b.extra=b.extra||[];
+  // row of four shields above the door + sign
+  EMB.forEach((e,i)=>plaque(e.id,1.7,1.9,x-3.3+i*2.2,4.7,fz+3.05,0,b));
+  plate('문 장 소',4.4,1.1,x,6.4,fz+3.08,0,'#f0d890','#3a2a1c',b);
+  put(MG.wood,boxGeo(.12,3.6,.12,1),x-4.8,1.8,fz+3.0,0,C(0x4a3320));put(MG.wood,boxGeo(.12,3.6,.12,1),x+4.8,1.8,fz+3.0,0,C(0x4a3320));
+  put(MG.wood,boxGeo(9.8,.16,.2,1),x,3.7,fz+3.0,0,C(0x4a3320));
+  lamp(x-5.6,fz+3.2);lamp(x+5.6,fz+3.2);
+  EMS.nx=x+1.4;EMS.nz=fz+2.6;
+}
+function buildFactions(){
+  FAC.hall.forEach(h=>{h.b=buildTrainHall(h)});
+  FAC.garr.forEach(h=>{h.b=buildGarrHall(h)});
+  FAC.mpb=buildMPHall(FAC.mp);FAC.sb=buildSurveyHall(FAC.survey);FAC.cb=buildCastle(FAC.castle);
+  FAC.cb.onDestroy=castleFall;
+  FAC.hall.forEach(h=>{h.b.onDestroy=()=>spill('train',h.b,h.id)});
+  FAC.garr.forEach(h=>{h.b.onDestroy=()=>spill('garrison',h.b,h.id)});
+}
+
+/* ===== emblem selection ===== */
+P.emb='train';
+function setEmblem(id,silent){
+  if(!EMB.find(e=>e.id===id))id='train';P.emb=id;store.set('wmt-emb',id);
+  try{const img=T.cloak.image,g=img.getContext('2d');drawCloak(g,img.width,id);T.cloak.needsUpdate=true}catch(e){}
+  try{const c=$('#emblem'),g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);drawFaction(g,id,64,64,118)}catch(e){}
+  if(!silent){const E=EMB.find(e=>e.id===id);toast('문장을 '+E.name+' 문장으로 바꿨어요!',2200)}
+}
+function openEmblemPanel(){
+  openPanel('문장소 담당관','주인공의 망토와 시작 화면에 새길 병단 문장을 골라 보세요. 비용은 무료예요.',
+    EMB.map(e=>({name:e.name+(P.emb===e.id?' · 착용 중':''),desc:e.desc,btn:P.emb===e.id?'착용 중':'이 문장 달기',disabled:P.emb===e.id,fn:()=>{setEmblem(e.id);closePanel()}})),'※ 새로 고르면 망토의 문장이 바로 바뀌어요.');
+}
+
+/* ===== building HP bars (always visible; pooled for ordinary houses) ===== */
+function mkBar(){const c=document.createElement('canvas');c.width=128;c.height=16;const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false,fog:false}));s.userData={c,t,k:-1,b:null};s.visible=false;scene.add(s);return s}
+function drawBar(s,hp,max,col){const k=Math.round(hp/max*64)+(col?1000:0);if(s.userData.k===k)return;s.userData.k=k;const g=s.userData.c.getContext('2d'),f=clamp(hp/max,0,1);
+  g.clearRect(0,0,128,16);g.fillStyle='rgba(10,8,6,.82)';g.fillRect(0,0,128,16);g.fillStyle=col||(f>.5?'#8fd16a':f>.25?'#e0b23a':'#d23a2a');g.fillRect(2,2,124*f,12);g.strokeStyle='rgba(240,230,200,.9)';g.lineWidth=1.5;g.strokeRect(.75,.75,126.5,14.5);s.userData.t.needsUpdate=true}
+const BARS=[];let barT=0;
+function updateBars(dt){
+  barT-=dt;
+  for(const b of FBLD){if(!b.bar){b.bar=mkBar();const sc=b.kind==='castle'?30:b.kind==='survey'?18:12;b.bar.scale.set(sc,sc/8,1);b.bar.position.set(b.x,b.barY,b.z)}
+    const d=Math.hypot(P.pos.x-b.x,P.pos.z-b.z);b.bar.visible=!b.dead&&d<(b.kind==='castle'?900:520);if(b.bar.visible)drawBar(b.bar,b.hp,b.hp0,b.kind==='castle'?'#e8e4d4':null)}
+  if(barT>0)return;barT=.3;
+  if(!BARS.length)for(let i=0;i<44;i++)BARS.push(mkBar());
+  const cand=[];for(const b of BLD){if(b.dead||b.fac)continue;const d=(b.x-P.pos.x)**2+(b.z-P.pos.z)**2;if(d<95*95)cand.push([d,b])}
+  cand.sort((a,c)=>a[0]-c[0]);
+  for(let i=0;i<BARS.length;i++){const s=BARS[i],e=cand[i];if(!e){s.visible=false;s.userData.b=null;continue}const b=e[1];
+    if(s.userData.b!==b){s.userData.b=b;s.userData.k=-1;s.scale.set(4.4,.55,1);s.position.set(b.x,(b.h||9)+1.6,b.z)}
+    s.visible=true;drawBar(s,b.hp,b.hp0||3)}
+}
+
+/* ===== castle destroyed -> game over ===== */
+const FOVER={castle:false};
+function castleFall(b){
+  for(let i=0;i<14;i++)puff(_a.set(b.x+(Math.random()-.5)*40,2+Math.random()*60,b.z+(Math.random()-.5)*40),_b.set((Math.random()-.5)*6,2+Math.random()*4,(Math.random()-.5)*6),14,4,0xcfc7b4);
+  spawnDebris(b.x,40,b.z,60,22,[0xf4f2ec,0xe6e3da,0x2c4a7c],true);hitShake=Math.max(hitShake,.6);
+  showAlert('중앙 성이 무너졌어요!','월 시나의 성이 거인에게 파괴되었습니다…',6000,true);
+  setTimeout(()=>{FOVER.castle=true;gameOver()},2400);
+}
+
+/* ================== SOLDIERS ================== */
+const FSG={cyl:new THREE.CylinderGeometry(1,1,1,8),sph:new THREE.SphereGeometry(1,8,6),box:new THREE.BoxGeometry(1,1,1),plane:new THREE.PlaneGeometry(1,1)};
+const FSM={skin:SMAT(0xe2b48c,.6),boot:SMAT(0x2a1c12,.6),pants:SMAT(0xd8d0b8,.9),belt:SMAT(0x3a2819,.6),steel:SMAT(0xe8ecf0,.25,.8),dark:SMAT(0x1a1410,.6),white:SMAT(0xf6f4ee,.7),gold:SMAT(0xc79a3b,.35,.8)};
+const FJ={train:SMAT(0xcdbf94,.85),garrison:SMAT(0x9a8672,.85),mp:SMAT(0xeeeadc,.8)};
+const FHAIR=[SMAT(0x2a1c14),SMAT(0x6a4a2a),SMAT(0xb88a4a),SMAT(0x1c1410),SMAT(0x8a8a88)];
+const FCLK={};
+function cloakMatFor(id){if(FCLK[id])return FCLK[id];const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');drawCloak(g,256,id);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;
+  return FCLK[id]=new THREE.MeshStandardMaterial({map:t,side:THREE.DoubleSide,roughness:.9})}
+function makeSoldier(fid,mounted){
+  const root=new THREE.Group(),g=new THREE.Group();root.add(g);
+  const mk=(geo,mat,sx,sy,sz,x,y,z,par,rx,ry,rz)=>{const m=new THREE.Mesh(geo,mat);m.scale.set(sx,sy,sz);m.position.set(x,y,z);if(rx||ry||rz)m.rotation.set(rx||0,ry||0,rz||0);(par||g).add(m);return m};
+  const legs=[-1,1].map(s=>{const l=new THREE.Group();l.position.set(s*.12,.88,0);g.add(l);mk(FSG.cyl,FSM.pants,.1,.84,.1,0,-.42,0,l);mk(FSG.box,FSM.boot,.14,.2,.26,0,-.82,.05,l);return l});
+  const torso=new THREE.Group();torso.position.y=.88;g.add(torso);
+  mk(FSG.cyl,FJ[fid],.24,.66,.17,0,.33,0,torso);mk(FSG.cyl,FSM.belt,.26,.07,.19,0,.1,0,torso);
+  for(const s of[-1,1])mk(FSG.cyl,FSM.steel,.045,.2,.045,s*.2,.02,-.05,torso,0,0,0);
+  mk(FSG.box,FSM.steel,.05,.1,.12,0,.02,.15,torso);
+  const cl=mk(FSG.plane,cloakMatFor(fid),.62,.95,1,0,.25,-.2,torso,.12,0,0);
+  const head=new THREE.Group();head.position.y=.8;torso.add(head);
+  mk(FSG.sph,FSM.skin,.12,.14,.125,0,.14,0,head);mk(FSG.sph,FHAIR[Math.floor(Math.random()*FHAIR.length)],.13,.09,.13,0,.2,-.01,head);
+  for(const s of[-1,1])mk(FSG.sph,FSM.dark,.012,.012,.01,s*.05,.16,.115,head);
+  if(fid==='mp')mk(FSG.cyl,FSM.white,.12,.05,.12,0,.27,0,head);
+  const arms=[-1,1].map(s=>{const a=new THREE.Group();a.position.set(s*.3,.64,0);torso.add(a);mk(FSG.cyl,FJ[fid],.065,.62,.065,0,-.3,0,a);mk(FSG.sph,FSM.skin,.055,.055,.055,0,-.64,0,a);return a});
+  const sword=new THREE.Group();sword.position.set(0,-.64,.05);arms[1].add(sword);
+  mk(FSG.box,FSM.steel,.035,.95,.014,0,.5,0,sword);mk(FSG.box,FSM.gold,.14,.03,.03,0,.04,0,sword);mk(FSG.box,FSM.dark,.03,.14,.03,0,-.03,0,sword);
+  let horse=null;
+  if(mounted){horse=new THREE.Group();root.add(horse);const W=FSM.white,mk2=(geo,mat,sx,sy,sz,x,y,z,par,rx)=>mk(geo,mat,sx,sy,sz,x,y,z,par||horse,rx||0,0,0);
+    mk2(FSG.box,W,.62,.74,1.7,0,1.15,0);mk2(FSG.box,W,.4,.5,.6,0,1.35,.85);mk2(FSG.box,W,.3,.7,.34,0,1.55,1.15,horse,.6);mk2(FSG.box,W,.26,.3,.62,0,1.78,1.5,horse,.3);
+    mk2(FSG.box,FSM.white,.1,.5,.16,0,1.6,.98,horse,.5);mk2(FSG.box,FSM.dark,.08,.05,.26,0,1.9,1.4,horse);mk2(FSG.box,FSM.steel,.2,.12,.5,0,1.7,-.4,horse,0);mk2(FSG.box,FSJ_mp(),.7,.1,.7,0,1.54,0);
+    mk2(FSG.box,FSM.white,.1,.6,.1,0,1.35,-.95,horse,-.3);
+    horse.legs=[[-1,.6],[1,.6],[-1,-.6],[1,-.6]].map(([sx,sz])=>{const l=new THREE.Group();l.position.set(sx*.22,.82,sz);horse.add(l);mk(FSG.box,W,.14,.82,.14,0,-.41,0,l);mk(FSG.box,FSM.dark,.16,.1,.16,0,-.84,0,l);return l});
+    g.position.y=.78;legs.forEach((l,i)=>{l.rotation.x=-1.15;l.rotation.z=(i?-1:1)*.35});torso.rotation.x=0}
+  root.traverse(m=>{if(m.isMesh)m.castShadow=false});scene.add(root);root.visible=false;
+  return {root,g,torso,legs,arms,head,cloak:cl,sword,horse};
+}
+function FSJ_mp(){return FSM.mpsad||(FSM.mpsad=SMAT(0x275d22,.7))}
+
+const SOLD=[],SCFG={max:0};
+const FSPEC={train:{hp:60,dps:4,spd:12,rt:70},garrison:{hp:130,dps:10,spd:15,rt:80},mp:{hp:420,dps:40,spd:26,rt:120}};
+function quadRaw(x,z){const a=Math.atan2(x,-z),P4=Math.PI/4;return Math.abs(a)<P4?0:a>=P4&&a<P4*3?1:Math.abs(a)>=P4*3?2:3}
+const R_ROSE=WALLS[1],R_SINA=WALLS[0];
+/* groups pick one shared target so several soldiers gang up on the same titan */
+const GROUPS={};
+function grp(key,cond,px,pz){return GROUPS[key]||(GROUPS[key]={cond,px,pz,tgt:null})}
+function scanGroups(){
+  for(const k in GROUPS){const g=GROUPS[k];let best=null,bd=1e12;
+    for(const t of liveT){if(t.air||t.st==='dead'||!g.cond(t))continue;const d=(t.x-g.px)**2+(t.z-g.pz)**2;if(d<bd){bd=d;best=t}}
+    g.tgt=best}
+}
+function addSoldier(fid,kind,o){
+  const sp=FSPEC[fid];
+  const rig=makeSoldier(fid,fid==='mp');
+  const s=Object.assign({fid,kind,rig,hp:sp.hp,maxHp:sp.hp,x:o.x,z:o.z,y:o.y||0,yaw:Math.random()*TAU,mode:'home',t:Math.random()*10,ph:Math.random()*6,hx:o.hx,hz:o.hz,phi:o.phi,phiC:o.phiC,R:o.R,side:o.side||1,grp:o.grp,swT:0,swK:0,atkT:0,hitT:-99,dead:false,deadT:0,respawn:o.respawn!==false,oa:Math.random()*TAU,os:(Math.random()<.5?-1:1)*(1+Math.random()*.6),ride:fid==='mp',sgn:o.side||1,spill:!!o.spill,vy:0,rap:0,ay:o.ay||0,hall:o.hall,off:o.off||0,sector:o.sector},{});
+  SOLD.push(s);if(kind==='W'){s.y=WH;placeWall(s)}
+  return s;
+}
+function placeWall(s){s.x=Math.sin(s.phi)*s.R;s.z=Math.cos(s.phi)*s.R;s.yaw=s.phi+Math.PI/2}
+function initSoldiers(){
+  const mkRope=()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(6),3));const l=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xe8e2d0}));l.frustumCulled=false;l.visible=false;scene.add(l);return l};
+  // training halls: 6 trainees each, defend their own Maria quadrant only
+  const HQ={W:3,N:0,E:1};
+  FAC.hall.forEach(h=>{const q=HQ[h.id],g=grp('T'+h.id,t=>ZONE(Math.hypot(t.x,t.z))===2&&quadRaw(t.x,t.z)===q,h.x,h.z);
+    for(let i=0;i<6;i++){const yx=h.x+(-10+(i%3)*10),yz=h.b.yard.z+(i<3?-3:3);const s=addSoldier('train','T',{x:yx,z:yz,hx:yx,hz:yz,grp:g,hall:h,sector:q});s.rig.root.position.set(yx,0,yz);s.yaw=0}});
+  // garrison: 5 per hall on the Rose wall top (N/E/S/W sectors)
+  const GP={N:[Math.PI,0],E:[Math.PI/2,1],S:[0,2],W:[-Math.PI/2,3]},OFF=[-.55,-.3,.3,.55,.8];
+  FAC.garr.forEach(h=>{const [pc,q]=GP[h.id],g=grp('G'+h.id,t=>ZONE(Math.hypot(t.x,t.z))===2&&quadRaw(t.x,t.z)===q,Math.sin(pc)*R_ROSE.R,Math.cos(pc)*R_ROSE.R);
+    for(let i=0;i<5;i++){const s=addSoldier('garrison','W',{phi:wrapPi(pc+OFF[i]),phiC:wrapPi(pc+OFF[i]),R:R_ROSE.R,side:1,grp:g,hall:h,sector:q,off:i});s.sgn=1;s.rope=mkRope();s.ropeSide=1;s.wallR=R_ROSE}});
+  // MPs: exactly 10
+  const gm=grp('MP',t=>Math.hypot(t.x,t.z)<176,0,0);
+  const dirs=[Math.PI,Math.PI/2,0,-Math.PI/2];
+  dirs.forEach((a,i)=>{const s=addSoldier('mp','C',{x:Math.sin(a)*42,z:Math.cos(a)*42,hx:Math.sin(a)*42,hz:Math.cos(a)*42,grp:gm,phi:a,phiC:a,R:42});s.rig.root.position.set(s.x,0,s.z)});
+  for(let i=0;i<2;i++){const yx=FAC.mp.x+(i?6:-6),yz=FAC.mpb.yard.z;const s=addSoldier('mp','H',{x:yx,z:yz,hx:yx,hz:yz,grp:gm});s.rig.root.position.set(yx,0,yz)}
+  [Math.PI,Math.PI/2,.5,-Math.PI/2].forEach(a=>{const s=addSoldier('mp','W',{phi:a,phiC:a,R:R_SINA.R,side:-1,grp:gm});s.sgn=-1;s.rope=mkRope();s.wallR=R_SINA});
+  for(const s of SOLD){s.rig.root.visible=false}
+}
+function spill(fid,b,hid){
+  const q=hid&&({W:3,N:0,E:1,S:2})[hid];
+  const g=grp('S'+fid+hid,fid==='train'?(t=>ZONE(Math.hypot(t.x,t.z))>=1&&Math.hypot(t.x-b.x,t.z-b.z)<230):(t=>ZONE(Math.hypot(t.x,t.z))<=2&&Math.hypot(t.x-b.x,t.z-b.z)<260),b.x,b.z);
+  for(let i=0;i<10;i++){const a=i/10*TAU,hx=b.x+Math.sin(a)*(26+Math.random()*10),hz=b.z+Math.cos(a)*(22+Math.random()*10)+8;
+    const s=addSoldier(fid,'F',{x:b.door.x+(Math.random()-.5)*4,z:b.door.z+Math.random()*2,hx,hz,grp:g,respawn:false,spill:true});s.rig.root.position.set(s.x,0,s.z);s.mode='home'}
+  toast((fid==='train'?'훈련병':'주둔병')+' 10명이 건물에서 쏟아져 나왔어요!',2600);
+}
+const _sp=new V3();
+function soldierDamage(s,n){
+  if(s.dead)return;s.hp-=n;s.hitT=time;
+  if(s.hp<=0){s.dead=true;s.deadT=0;s.mode='dead';if(s.rope)s.rope.visible=false;puff(_a.set(s.x,s.y+1,s.z),_b.set(0,2,0),1.2,1.2,0xa02020)}
+}
+function soldierStrike(t){
+  for(const s of SOLD){if(s.dead||s.mode!=='fight')continue;if(Math.hypot(s.x-t.x,s.z-t.z)<t.H*.8+4&&Math.random()<.45)soldierDamage(s,(12+t.H*1.3)*(s.fid==='mp'?.9:s.fid==='garrison'?1.4:1.5))}
+}
+function killTitanBySoldiers(t){
+  if(t.st==='dead')return;t.st='dead';t.dead=0;t.atk=null;if(t.home)RESP.push({home:t.home,at:RESPT+50+Math.random()*50});t.bar.visible=false;
+  for(const o of t.tg){const i=TARGETS.indexOf(o);if(i>=0)TARGETS.splice(i,1)}
+  sfxAt('kill',t.x,t.z,300,.7);
+}
+function fslash(s,t,dmg){
+  t.hp-=dmg;t.flinch=Math.max(t.flinch,.2);t.aggro=true;updateBar(t);
+  const fx=Math.sin(t.yaw),fz=Math.cos(t.yaw);
+  puff(_a.set(s.x,s.y+1.2,s.z),_b.set((Math.random()-.5)*2,1+Math.random()*2,(Math.random()-.5)*2),.5,.6,0xe8dcc8);
+  if(Math.random()<.4)puff(_a.set(t.x-fx*t.H*.09,t.y+t.H*.84,t.z-fz*t.H*.09),_b.set((Math.random()-.5)*3,1+Math.random()*2,(Math.random()-.5)*3),t.H*.1,.7,0xc8402a);
+  sfxAt('slash',s.x,s.z,120,.5);
+  if(t.hp<=0)killTitanBySoldiers(t);
+}
+function respawnSoldier(s){
+  s.dead=false;s.hp=s.maxHp;s.mode='home';s.rig.root.rotation.set(0,0,0);s.rig.g.rotation.set(0,0,0);
+  if(s.kind==='W'){s.phi=s.phiC;s.y=WH;placeWall(s)}else{s.x=s.hx;s.z=s.hz;s.y=0}
+}
+function updateSoldiers(dt){
+  scanTimer-=dt;if(scanTimer<=0){scanTimer=.4;scanGroups()}
+  for(const t of liveT)t._fc=0;
+  const px=P.pos.x,pz=P.pos.z;
+  for(const s of SOLD){
+    const R=s.rig,root=R.root;
+    if(s.dead){s.deadT+=dt;const k=Math.min(1,s.deadT/.8);root.rotation.x=-1.5*k;s.y=Math.max(0,s.y-dt*8);root.position.set(s.x,s.kind==='W'?s.y:groundY(s.x,s.z),s.z);
+      if(s.deadT>3)root.visible=false;
+      if(s.respawn&&s.deadT>FSPEC[s.fid].rt)respawnSoldier(s);continue}
+    s.t+=dt;
+    if(s.hp<s.maxHp&&time-s.hitT>(s.fid==='mp'?3:12))s.hp=Math.min(s.maxHp,s.hp+(s.fid==='mp'?s.maxHp*.12:2.5)*dt);
+    const tg=s.grp&&s.grp.tgt&&s.grp.tgt.st!=='dead'?s.grp.tgt:null;
+    let moveSp=0,fly=false,flyDir=0;const spd=FSPEC[s.fid].spd;
+    const goTo=(tx,tz,sp,dt2)=>{const dx=tx-s.x,dz=tz-s.z,d=Math.hypot(dx,dz);if(d<.01)return d;const st=Math.min(d,sp*dt2);s.x+=dx/d*st;s.z+=dz/d*st;s.yaw+=wrapPi(Math.atan2(dx,dz)-s.yaw)*Math.min(1,10*dt2);return d};
+    const easeY=(ty,k)=>{s.y+=(ty-s.y)*Math.min(1,k*dt)};
+    if(s.kind==='W'){
+      const Rr=s.R;
+      if(s.mode==='home'){
+        const target=wrapPi(s.phiC+Math.sin(s.t*.18+s.ph)*.07);const dphi=wrapPi(target-s.phi),mv=clamp(dphi,-8*dt/Rr,8*dt/Rr);s.phi=wrapPi(s.phi+mv);s.y=WH;
+        moveSp=Math.abs(mv)>1e-5?4:0;s.yaw=s.phi+(mv>=0?Math.PI/2:-Math.PI/2);if(!moveSp)s.yaw=s.phi+(s.sgn>0?0:Math.PI);
+        s.x=Math.sin(s.phi)*Rr;s.z=Math.cos(s.phi)*Rr;
+        if(tg)s.mode='top';
+      }else if(s.mode==='top'){
+        if(!tg){s.mode='home'}else{
+          let want=Math.atan2(tg.x,tg.z);const gap=.075+(Rr<200?.05:0);
+          if(Math.abs(want)<gap)want=Math.sign(s.phi||1)*gap;
+          const hs=Math.sign(s.phiC)||1;if(Math.abs(s.phi)<Math.PI*.4&&Math.sign(s.phi)!==Math.sign(want)&&Math.abs(want)<Math.PI*.4)want=hs*gap;
+          want=wrapPi(want+(s.off||0)*.01);
+          const dphi=wrapPi(want-s.phi),mv=clamp(dphi,-16*dt/Rr,16*dt/Rr);s.phi=wrapPi(s.phi+mv);moveSp=10;s.yaw=s.phi+(mv>=0?Math.PI/2:-Math.PI/2);s.y=WH;
+          s.x=Math.sin(s.phi)*Rr;s.z=Math.cos(s.phi)*Rr;
+          if(Math.abs(dphi)*Rr<3){s.mode='down';s.vy=0;sfxAt('fire',s.x,s.z,200,.6)}}
+      }else if(s.mode==='down'){
+        s.vy=Math.min(20,s.vy+30*dt);s.y-=s.vy*dt;const fr=Rr+s.sgn*6.6;s.x=Math.sin(s.phi)*fr;s.z=Math.cos(s.phi)*fr;s.yaw=Math.atan2(-s.sgn*Math.sin(s.phi),-s.sgn*Math.cos(s.phi));
+        if(s.y<=.4){s.y=0;s.mode=tg?'go':'back';s.rope.visible=false;s.landed=true}
+      }else if(s.mode==='toWall'){
+        const fr=Rr+s.sgn*6.6,tx=Math.sin(s.phi)*fr,tz=Math.cos(s.phi)*fr;fly=true;const d=goTo(tx,tz,spd,dt);easeY(d>20?14:0,4);
+        if(d<1.2){s.mode='up';s.vy=0}
+        if(tg&&d>1.2&&false)s.mode='go';
+      }else if(s.mode==='up'){
+        s.vy=Math.min(24,s.vy+40*dt);s.y+=s.vy*dt;const fr=Rr+s.sgn*6.6;s.x=Math.sin(s.phi)*fr;s.z=Math.cos(s.phi)*fr;s.yaw=Math.atan2(-s.sgn*Math.sin(s.phi),-s.sgn*Math.cos(s.phi));
+        if(s.y>=WH){s.y=WH;s.mode='home';s.rope.visible=false}
+      }
+    }
+    if(s.kind!=='W'||s.mode==='go'||s.mode==='fight'||s.mode==='back'){
+      // ground-based soldiers (and wall soldiers once down)
+      if(s.mode==='home'){
+        const d=Math.hypot(s.hx-s.x,s.hz-s.z);
+        if(s.kind==='C'){const a=s.phiC+Math.sin(s.t*.12+s.ph)*.55;const tx=Math.sin(a)*s.R,tz=Math.cos(a)*s.R,dd=goTo(tx,tz,7,dt);moveSp=dd>.3?7:0;if(!moveSp)s.yaw+=wrapPi(a+Math.PI/2-s.yaw)*dt*2;fly=false;easeY(0,8)}
+        else{if(d>1.2){goTo(s.hx,s.hz,spd*.5,dt);moveSp=spd*.5;easeY(0,6)}else{easeY(0,8);s.drill=true}}
+        if(tg)s.mode='go';
+      }
+      if(s.mode==='go'){
+        if(!tg){s.mode='back'}else{
+          s.oa+=s.os*dt;const rr=tg.rad+2.2,tx=tg.x+Math.sin(s.oa)*rr,tz=tg.z+Math.cos(s.oa)*rr;
+          const d=goTo(tx,tz,spd*(s.ride&&!s.landed?1:1),dt);moveSp=spd;
+          const far=d>26;s.fly=!s.ride||!far;if(s.ride&&far){easeY(0,8)}else{fly=true;easeY(far?14:clamp(tg.t0||tg.H*.6,3,tg.H*.88),far?3:5)}
+          if(d<3.5){s.mode='fight';s.atkT=.2}}
+      }else if(s.mode==='fight'){
+        if(!tg){s.mode=s.kind==='W'?'toWall':'back'}else{
+          tg._fc=(tg._fc||0)+1;
+          s.oa+=s.os*dt*.7;const rr=tg.rad+2.2,tx=tg.x+Math.sin(s.oa)*rr,tz=tg.z+Math.cos(s.oa)*rr;
+          const d=goTo(tx,tz,spd*1.2,dt);fly=true;moveSp=Math.min(spd,d*4);
+          const hy=clamp(tg.H*(.62+.22*Math.sin(s.t*.9+s.ph)),3,tg.H*.9);easeY(hy,6);
+          s.yaw=Math.atan2(tg.x-s.x,tg.z-s.z);
+          s.atkT-=dt;if(s.atkT<=0){s.atkT=.5+Math.random()*.25;s.swT=.35;fslash(s,tg,FSPEC[s.fid].dps*.6)}}
+      }else if(s.mode==='back'){
+        if(tg){s.mode='go'}else if(s.kind==='W'){s.mode='toWall'}else{
+          const d=goTo(s.hx,s.hz,spd,dt);moveSp=spd;fly=true;easeY(d>20?14:0,3);if(d<1.5){s.mode='home';s.y=0}}
+      }
+    }
+    // ---------- visuals ----------
+    const dv=Math.hypot(px-s.x,pz-s.z);
+    const gy=s.kind==='W'?0:groundY(s.x,s.z);
+    s.landed=false;
+    const vis=dv<(s.fid==='mp'?420:300)&&!(s.kind==='W'&&false);
+    if(s.kind!=='W'||s.mode==='go'||s.mode==='fight'||s.mode==='back'||s.mode==='toWall')root.position.set(s.x,Math.max(s.y,gy),s.z);else root.position.set(s.x,s.y,s.z);
+    root.visible=vis;
+    if(s.rope){const rp=s.rope;if(vis&&(s.mode==='down'||s.mode==='up')){rp.visible=true;const pa=rp.geometry.attributes.position,fr=s.R+s.sgn*5.6;pa.setXYZ(0,Math.sin(s.phi)*fr,WH+.6,Math.cos(s.phi)*fr);pa.setXYZ(1,s.x,s.y+1.4,s.z);pa.needsUpdate=true}else rp.visible=false}
+    if(vis){
+      s.swT=Math.max(0,s.swT-dt);
+      const mounted=s.ride&&(s.mode==='home'||s.mode==='back'||(s.mode==='go'&&!fly)||s.kind==='C'||s.kind==='H')&&!(s.mode==='fight')&&s.y<1&&s.mode!=='down'&&s.mode!=='up'&&s.mode!=='top';
+      const wallStand=s.kind==='W'&&(s.mode==='home'||s.mode==='top');
+      poseFS(s,dt,moveSp,fly,mounted&&!wallStand);
+    }
+  }
+  // titans strike back at soldiers fighting them
+  for(const t of liveT){if(t._fc>0&&!t.atk&&t.cd<=0&&!t.air){startAtk(t,Math.random()<.5?'swat':'smash',null)}}
+  updateFlags();
+}
+let scanTimer=0;
+function poseFS(s,dt,mv,fly,mounted){
+  const R=s.rig,L=R.legs,A=R.arms,root=R.root,t=s.t;
+  root.rotation.y=s.yaw;root.rotation.x=0;root.rotation.z=0;R.g.rotation.set(0,0,0);R.torso.rotation.set(0,0,0);
+  if(s.mode==='down'||s.mode==='up'){
+    R.g.rotation.x=-1.05;L[0].rotation.set(.35,0,.12);L[1].rotation.set(.35,0,-.12);A[0].rotation.set(-2.5,0,.15);A[1].rotation.set(-2.5,0,-.15);R.sword.visible=false;R.torso.rotation.y=Math.sin(t*3)*.08;
+    R.root.rotation.x=0;return}
+  R.sword.visible=true;
+  if(R.horse){R.horse.visible=mounted;R.g.position.y=mounted?.78:0}
+  if(mounted){
+    const sp=mv>1?1:0,ph=s.ph+=dt*(6+mv*.3)*sp;
+    L.forEach((l,i)=>{l.rotation.x=-1.15;l.rotation.z=(i?-1:1)*.35});
+    if(R.horse.legs)R.horse.legs.forEach((l,i)=>{l.rotation.x=Math.sin(ph+(i%2?Math.PI:0)+(i>1?1.2:0))*.7*sp});
+    R.horse.position.y=Math.abs(Math.sin(ph*.5))*.1*sp;
+    A[0].rotation.set(-.9,0,.1);A[1].rotation.set(-.9+Math.sin(t*2)*.05,0,-.1);R.torso.rotation.x=.05;return}
+  if(fly){
+    R.g.rotation.x=.35;R.g.rotation.z=Math.sin(t*1.7)*.12;L[0].rotation.set(.7,0,.1);L[1].rotation.set(.45,0,-.1);
+    const sw=s.swT>0?s.swT/.35:0;
+    if(s.mode==='fight'&&sw>0){const k=1-sw;A[1].rotation.set(-2.4+Math.sin(k*Math.PI)*-.2+k*2.2,Math.sin(k*Math.PI)*-1.2,-.3);A[0].rotation.set(-1.2,0,.2);R.torso.rotation.y=Math.sin(k*Math.PI)*-.8}
+    else{A[0].rotation.set(-1.3,0,.2);A[1].rotation.set(-1.6,0,-.2)}
+    return}
+  // on foot
+  const walk=mv>.5?1:0,ph=s.ph+=dt*(4+mv*.6)*walk,sw=Math.sin(ph);
+  if(walk){L[0].rotation.x=sw*.7;L[1].rotation.x=-sw*.7;A[0].rotation.set(-sw*.6,0,.08);A[1].rotation.set(sw*.6,0,-.08);R.g.position.y=Math.abs(Math.cos(ph))*.05}
+  else if(s.kind==='T'||s.kind==='F'||s.kind==='H'){ // drill
+    const u=(t*.8+s.ph)%2.4/2.4,k=u<.45?Math.sin(u/.45*Math.PI):0,k2=u>=.5&&u<.95?Math.sin((u-.5)/.45*Math.PI):0;
+    L[0].rotation.set(.18,0,0);L[1].rotation.set(-.18,0,0);A[1].rotation.set(-1.2-k*1.4+k2*1.2,k*-.8+k2*.9,-.2);A[0].rotation.set(-.5,0,.3);R.torso.rotation.y=(k2-k)*.5;R.g.position.y=0}
+  else{ // wall sentry / guard stance
+    L[0].rotation.set(.04,0,.06);L[1].rotation.set(-.04,0,-.06);A[0].rotation.set(0,0,.1);A[1].rotation.set(Math.sin(t*1.1)*.04-.2,0,-.1);R.torso.rotation.z=Math.sin(t*1.2)*.015;R.g.position.y=0}
+}
+function updateFlags(){
+  for(const f of FLAGS){const d=Math.abs(P.pos.x-f.x)+Math.abs(P.pos.z-f.z);if(d>420){f.m.visible=false&&false;continue}f.m.rotation.y=f.ry+Math.sin(time*1.8+f.ph)*.16}
+}
+function updateFactions(dt){
+  updateSoldiers(dt);updateBars(dt);
+}
 
 /* ============ boot ============ */
 (function boot(){
   if(IS_TOUCH)document.body.classList.add('is-touch');
-  buildTerrain();WALLS.forEach(buildWall);buildTown();buildChurch();buildPlaza();buildForest();buildRoad();buildDesert();buildHarbor();buildFactory();buildNightFx();
+  buildTerrain();WALLS.forEach(buildWall);buildTown();buildPlaza();buildFactions();buildForest();buildRoad();buildDesert();buildHarbor();buildFactory();buildNightFx();
   for(const k of ['plaster','stone','roof','wood','winD','winL','door','banner','prop','lantern','foliage','clock','metal']){if(MG[k].n)scene.add(MG[k].mesh(MAT[k],k!=='winD'&&k!=='winL'&&k!=='lantern'))}
   buildMinimap();initLife();$('#retryBtn').addEventListener('click',restartAfterDeath);
   const savedTod=+store.get('wmt-tod','0');applyTOD(isNaN(savedTod)?0:clamp(savedTod,0,TOD.length-1));
   setView(store.get('wmt-view','third')==='third');setAssist(store.get('wmt-assist','easy')==='easy');
   const snd=store.get('wmt-snd','on')==='on';audio.setOn(snd);document.querySelectorAll('[data-opt="snd"] button').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.v==='on')===snd)));
-  const eg=$('#emblem').getContext('2d');drawEmblem(eg,64,64,54,'#d2a64a','#0b0e0d');
+  setEmblem(store.get('wmt-emb','train'),true);
   fx.width=innerWidth;fx.height=innerHeight;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();applyMenuLayout();
   P.pos.copy(SPAWN);
   requestAnimationFrame(t=>{lastT=t;loop(t)});
 })();
 })();
 </script>
+
+</body></html>
 
 </body></html>
