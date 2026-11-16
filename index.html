@@ -3591,13 +3591,13 @@ const PAL=[
 ];
 let roseSI=0;
 function initPeople(){
-  const N=[150,380,430],total=N[0]+N[1]+N[2],mat=()=>new THREE.MeshStandardMaterial({color:0xffffff,roughness:.85,vertexColors:true});
+  const N=IS_TOUCH?[80,150,170]:[110,230,260],total=N[0]+N[1]+N[2],mat=()=>new THREE.MeshStandardMaterial({color:0xffffff,roughness:.85,vertexColors:true});
   const G=peopleGeos();
   for(const k in G){const m=new THREE.InstancedMesh(G[k],mat(),total);m.frustumCulled=false;m.castShadow=(k==='torso'||k==='head'||k==='coat');m.userData.k=k;scene.add(m);PEOPLE[k]=m}
   let i=0;
   for(let cls=0;cls<3;cls++){const pal=PAL[cls];
     for(let k=0;k<N[cls];k++){const sp=spotIn(cls);if(!sp)continue;const child=Math.random()<.16,pk=a=>a[Math.floor(Math.random()*a.length)];
-      const n={i,cls,x:sp[0],z:sp[1],yaw:Math.random()*TAU,h:child?.56+Math.random()*.06:.86+Math.random()*.09,tx:sp[0],tz:sp[1],spd:(cls===0?.75:cls===1?1.05:.95)*(child?1.2:1)*(.85+Math.random()*.3),st:'idle',t:Math.random()*3,phase:Math.random()*6,greetCd:Math.random()*8,alive:true,hy:0,bow:0,hat:0,coat:Math.random()<pal.coat,fx:0,fz:0,hid:false,eatenAt:0};
+      const n={i,cls,x:sp[0],z:sp[1],yaw:Math.random()*TAU,h:child?.68+Math.random()*.06:.86+Math.random()*.09,tx:sp[0],tz:sp[1],spd:(cls===0?.75:cls===1?1.05:.95)*(child?1.2:1)*(.85+Math.random()*.3),st:'idle',t:Math.random()*3,phase:Math.random()*6,greetCd:Math.random()*8,alive:true,hy:0,bow:0,hat:0,coat:Math.random()<pal.coat,fx:0,fz:0,hid:false,eatenAt:0};
       if(Math.random()<pal.hatB)n.hat=2;else if(Math.random()<pal.hatA)n.hat=1;
       n.talk=Math.random()<.2;n.apron=!child&&cls===1&&Math.random()<.8;n.bag=!child&&Math.random()<(cls===0?.35:cls===1?.6:.25);n.scarf=Math.random()<(cls===2?.4:cls===1?.55:.3);n.beard=!child&&Math.random()<(cls===1?.3:.4)*(n.apron&&cls!==1?0:1);
       if(cls===1&&!child&&ROSE_STALLS.length&&roseSI<ROSE_STALLS.length){const st=ROSE_STALLS[roseSI++];n.x=n.tx=st.mx;n.z=n.tz=st.mz;n.yaw=st.rot;n.stall=st;n.apron=true;n.hat=0}
@@ -3686,29 +3686,59 @@ function updatePeople(dt){
 /* ================== ANIMALS ================== */
 const ANIMALS=[],SPEC={};
 function legs4(xo,h,zo,w,col){const o=[];for(const sx of[-1,1])for(const sz of[-1,1])o.push(['b',w,h,w,sx*xo,h/2,sz*zo,col]);return o}
+// 다리: 윗다리 + 아랫다리 + 발(앞/뒤 한 쌍씩)
+function L4(xo,zf,zb,h,w,col,fcol){const o=[];for(const sx of[-1,1])for(const z of[zf,zb]){const x=sx*xo;o.push(['b',w*1.15,h*.55,w*1.25,x,h*.72,z,col],['b',w*.78,h*.5,w*.78,x,h*.25,z,col],['b',w*.95,h*.1,w*1.2,x,h*.05,z+.015,fcol])}return o}
 const SPEC_DEF={
-  dog:{parts:[['b',.3,.32,.62,0,.5,0,0xe4e4e4],['b',.22,.22,.28,0,.7,.4,0xe4e4e4],['b',.12,.1,.12,0,.66,.58,0x2a2a2a],['b',.06,.14,.05,-.08,.84,.34,0x6a6a6a],['b',.06,.14,.05,.08,.84,.34,0x6a6a6a],['b',.06,.06,.32,0,.64,-.4,0xd0d0d0]].concat(legs4(.1,.36,.22,.07,0xc0c0c0)),
+  dog:{parts:[['s',.3,.32,.62,0,.54,0,0xe4e4e4],['s',.28,.34,.28,0,.54,.22,0xf0f0f0],['s',.3,.32,.3,0,.52,-.2,0xe4e4e4],['s',.18,.26,.2,0,.68,.34,0xe4e4e4,.5],
+      ['s',.22,.2,.26,0,.76,.46,0xe4e4e4],['s',.12,.1,.18,0,.71,.6,0xf4f4f4],['s',.055,.045,.05,0,.725,.7,0x1a1a1a],
+      ['s',.035,.035,.03,-.065,.79,.56,0x111111],['s',.035,.035,.03,.065,.79,.56,0x111111],
+      ['b',.05,.15,.09,-.12,.84,.4,0xb8b8b8,0,.35],['b',.05,.15,.09,.12,.84,.4,0xb8b8b8,0,-.35],['b',.05,.05,.3,0,.6,-.42,0xd0d0d0,-.35]].concat(L4(.1,.2,-.2,.38,.075,0xd8d8d8,0xf4f4f4)),
     tint:[0xc8a070,0x7a5a3a,0x333333,0xe8e0d0,0x9a7a50],sz:[.85,1.15],spd:1.8,cnt:[5,8,5],mode:'dog'},
-  cat:{parts:[['b',.2,.2,.42,0,.34,0,0xe0e0e0],['b',.17,.16,.17,0,.46,.28,0xe0e0e0],['b',.05,.08,.04,-.06,.58,.28,0xcfcfcf],['b',.05,.08,.04,.06,.58,.28,0xcfcfcf],['b',.05,.05,.4,0,.5,-.34,0xd8d8d8]].concat(legs4(.07,.26,.15,.05,0xcfcfcf)),
+  cat:{parts:[['s',.2,.2,.42,0,.35,0,0xe0e0e0],['s',.2,.22,.22,0,.34,-.14,0xe0e0e0],['s',.18,.2,.2,0,.36,.14,0xe8e8e8],['s',.17,.15,.16,0,.5,.27,0xe0e0e0],
+      ['k',.06,.1,.05,-.06,.6,.26,0xcfcfcf,0,.15],['k',.06,.1,.05,.06,.6,.26,0xcfcfcf,0,-.15],['s',.08,.06,.06,0,.47,.34,0xf4f4f4],['s',.022,.016,.016,0,.485,.375,0xd88888],
+      ['s',.03,.03,.02,-.05,.52,.34,0xd8f070],['s',.03,.03,.02,.05,.52,.34,0xd8f070],
+      ['b',.045,.045,.2,0,.36,-.3,0xd8d8d8,-.4],['b',.045,.2,.045,0,.5,-.4,0xd8d8d8,-.1]].concat(L4(.065,.14,-.14,.26,.05,0xd0d0d0,0xf4f4f4)),
     tint:[0xd0b090,0x666666,0xf0f0f0,0x2a2a2a,0xc58a4a],sz:[.9,1.1],spd:1.3,cnt:[4,6,5],mode:'cat'},
-  chicken:{parts:[['s',.3,.28,.42,0,.34,0,0xf0f0f0],['s',.14,.16,.14,0,.56,.2,0xf0f0f0],['b',.1,.22,.1,0,.46,.17,0xf0f0f0],['b',.03,.08,.1,0,.68,.2,0xd02a20],['b',.05,.04,.08,0,.54,.31,0xe0b030],['b',.05,.2,.18,0,.46,-.26,0xdcdcdc],['b',.03,.2,.03,-.07,.1,0,0xd8b030],['b',.03,.2,.03,.07,.1,0,0xd8b030]],
+  chicken:{parts:[['s',.3,.28,.42,0,.34,0,0xf0f0f0],['s',.28,.3,.3,0,.37,.12,0xf4f4f4],['s',.1,.22,.1,0,.52,.2,0xf0f0f0],['s',.11,.12,.13,0,.64,.24,0xf0f0f0],
+      ['k',.05,.1,.05,0,.62,.34,0xe0b030,1.5708],['s',.03,.07,.09,0,.72,.23,0xd02a20],['s',.03,.05,.03,0,.57,.33,0xd02a20],
+      ['s',.02,.02,.02,-.055,.66,.28,0x111111],['s',.02,.02,.02,.055,.66,.28,0x111111],
+      ['s',.06,.2,.3,-.16,.38,-.02,0xe4e4e4,0,.2],['s',.06,.2,.3,.16,.38,-.02,0xe4e4e4,0,-.2],
+      ['b',.04,.2,.12,0,.52,-.3,0xdcdcdc,-.5],['b',.04,.2,.1,-.06,.5,-.28,0xd0d0d0,-.5,.3],['b',.04,.2,.1,.06,.5,-.28,0xd0d0d0,-.5,-.3],
+      ['b',.025,.18,.025,-.07,.09,0,0xd8b030],['b',.025,.18,.025,.07,.09,0,0xd8b030],['b',.07,.02,.1,-.07,.01,.03,0xd8b030],['b',.07,.02,.1,.07,.01,.03,0xd8b030]],
     tint:[0xffffff,0xd8a060,0x8a5a3a,0x444444,0xeeeedd],sz:[.85,1.1],spd:.9,cnt:[0,18,34],mode:'flee'},
-  pig:{parts:[['b',.55,.5,.9,0,.52,0,0xf0c8c0],['b',.4,.38,.35,0,.55,.62,0xf0c8c0],['b',.2,.15,.1,0,.5,.82,0xd89090],['b',.12,.12,.04,-.14,.78,.55,0xe0a8a0],['b',.12,.12,.04,.14,.78,.55,0xe0a8a0]].concat(legs4(.2,.28,.32,.12,0xe0b0a8)),
+  pig:{parts:[['s',.58,.52,.95,0,.55,0,0xf0c8c0],['s',.4,.38,.4,0,.6,.58,0xf0c8c0],['c',.2,.12,.2,0,.55,.8,0xe89898,1.5708],
+      ['s',.03,.03,.02,-.04,.55,.865,0x6a3a3a],['s',.03,.03,.02,.04,.55,.865,0x6a3a3a],['s',.035,.035,.03,-.13,.68,.72,0x111111],['s',.035,.035,.03,.13,.68,.72,0x111111],
+      ['k',.13,.16,.05,-.15,.82,.5,0xe0a8a0,.5,.6],['k',.13,.16,.05,.15,.82,.5,0xe0a8a0,.5,-.6],
+      ['s',.06,.06,.06,0,.68,-.5,0xe0a8a0],['s',.05,.05,.05,.04,.72,-.54,0xe0a8a0]].concat(L4(.2,.32,-.32,.3,.12,0xe8bab2,0x8a5a54)),
     tint:[0xf0b8b8,0xe0a0a0,0xf8c8c0,0x9a7a70],sz:[.85,1.15],spd:1.0,cnt:[0,6,10],mode:'flee'},
-  sheep:{parts:[['s',.7,.6,.9,0,.68,0,0xf4f4f4],['b',.22,.28,.3,0,.78,.55,0x404040]].concat(legs4(.18,.52,.3,.07,0x383838)),
+  sheep:{parts:[['s',.7,.6,.85,0,.7,0,0xf4f4f4],['s',.5,.3,.6,0,.98,0,0xf4f4f4],['s',.3,.4,.5,-.3,.74,0,0xf4f4f4],['s',.3,.4,.5,.3,.74,0,0xf4f4f4],
+      ['s',.3,.3,.3,-.22,.9,.28,0xf4f4f4],['s',.3,.3,.3,.22,.9,.28,0xf4f4f4],['s',.3,.3,.3,-.22,.9,-.28,0xf4f4f4],['s',.3,.3,.3,.22,.9,-.28,0xf4f4f4],['s',.4,.4,.3,0,.8,-.45,0xf4f4f4],
+      ['s',.2,.26,.3,0,.82,.57,0x404040,.4],['s',.24,.16,.2,0,.98,.5,0xf4f4f4],['s',.17,.06,.1,-.17,.87,.52,0x383838,0,.3],['s',.17,.06,.1,.17,.87,.52,0x383838,0,-.3],
+      ['s',.035,.035,.03,-.08,.88,.68,0xffffff],['s',.035,.035,.03,.08,.88,.68,0xffffff],['s',.06,.05,.05,0,.74,.7,0x222222]].concat(L4(.18,.3,-.3,.5,.07,0x383838,0x222222)),
     tint:[0xffffff,0xe8e0d0,0xcfcfcf,0x666666],sz:[.85,1.1],spd:1.0,cnt:[0,0,22],mode:'flee'},
-  cow:{parts:[['b',.75,.8,1.5,0,1.05,0,0xf0f0f0],['b',.78,.5,.5,0,1.2,.35,0x2a2a2a],['b',.4,.45,.5,0,1.15,1.0,0xf0f0f0],['b',.06,.15,.06,-.2,1.45,.95,0xd8d0c0],['b',.06,.15,.06,.2,1.45,.95,0xd8d0c0],['b',.06,.06,.5,0,.9,-.8,0xb0b0b0]].concat(legs4(.25,.7,.55,.14,0xdadada)),
+  cow:{parts:[['s',.82,.82,1.5,0,1.1,0,0xf0f0f0],['s',.86,.45,.5,0,1.22,.2,0x2a2a2a],['s',.86,.4,.4,0,1.15,-.45,0x2a2a2a],['s',.4,.5,.5,0,1.25,.62,0xf0f0f0,.5],
+      ['s',.38,.42,.52,0,1.2,.98,0xf0f0f0,.4],['s',.3,.22,.22,0,1.06,1.22,0xe8b8b0,.4],['s',.04,.03,.03,-.07,1.08,1.33,0x6a3a3a],['s',.04,.03,.03,.07,1.08,1.33,0x6a3a3a],
+      ['k',.06,.2,.06,-.2,1.46,.92,0xe8e0c0,0,.6],['k',.06,.2,.06,.2,1.46,.92,0xe8e0c0,0,-.6],['s',.2,.07,.12,-.27,1.34,.88,0xd8d0c0,0,.2],['s',.2,.07,.12,.27,1.34,.88,0xd8d0c0,0,-.2],
+      ['s',.04,.04,.03,-.17,1.28,1.15,0x111111],['s',.04,.04,.03,.17,1.28,1.15,0x111111],['s',.25,.18,.25,0,.66,-.35,0xf0b8b0],
+      ['b',.05,.7,.05,0,1.0,-.82,0xd0d0d0,.15],['s',.1,.16,.1,0,.62,-.87,0x2a2a2a]].concat(L4(.25,.55,-.55,.75,.14,0xe0e0e0,0x222222)),
     tint:[0xffffff,0xd7b48a,0x6a4a3a,0xeeeeee],sz:[.95,1.1],spd:.8,cnt:[0,0,14],mode:'face'},
-  horse:{parts:[['b',.6,.8,1.4,0,1.35,0,0xe0e0e0],['b',.3,.85,.36,0,1.75,.8,0xe0e0e0,-.5],['b',.28,.3,.65,0,2.15,1.15,0xe0e0e0,-.4],['b',.08,.7,.2,0,1.95,.55,0x2a2a2a,-.5],['b',.14,.7,.1,0,1.2,-.85,0x2a2a2a]].concat(legs4(.2,1.0,.55,.13,0xd0d0d0)),
+  horse:{parts:[['s',.62,.8,1.5,0,1.4,0,0xe0e0e0],['s',.58,.75,.5,0,1.38,.5,0xe0e0e0],['s',.6,.78,.55,0,1.42,-.45,0xe0e0e0],
+      ['s',.3,.95,.36,0,2.02,.9,0xe0e0e0,.6],['s',.28,.32,.7,0,2.17,1.37,0xe0e0e0,.8],['s',.22,.24,.28,0,1.95,1.6,0xd8d8d8,.8],
+      ['s',.04,.03,.03,-.07,1.92,1.72,0x2a2a2a],['s',.04,.03,.03,.07,1.92,1.72,0x2a2a2a],
+      ['k',.08,.2,.08,-.08,2.45,1.22,0xe0e0e0,.3,.1],['k',.08,.2,.08,.08,2.45,1.22,0xe0e0e0,.3,-.1],
+      ['s',.04,.04,.03,-.15,2.25,1.36,0x111111],['s',.04,.04,.03,.15,2.25,1.36,0x111111],
+      ['b',.06,.95,.12,0,2.12,.72,0x2a2a2a,.6],['b',.07,.2,.1,0,2.4,1.2,0x2a2a2a,.4],['b',.12,.8,.1,0,1.15,-.9,0x2a2a2a,.2]].concat(L4(.2,.55,-.55,1.0,.14,0xd8d8d8,0x2a2a2a)),
     tint:[0x8a5a3a,0x222222,0xeeeeee,0xb08050,0x6a4a30],sz:[.95,1.08],spd:1.1,cnt:[12,4,0],mode:'face'},
-  bird:{parts:[['s',.14,.1,.3,0,0,0,0xf0f0f0],['b',.5,.02,.2,-.3,.04,0,0xe0e0e0,0,.3],['b',.5,.02,.2,.3,.04,0,0xe0e0e0,0,-.3],['b',.06,.03,.2,0,0,-.22,0xdcdcdc]],
+  bird:{parts:[['s',.14,.12,.32,0,0,0,0xf0f0f0],['s',.08,.08,.09,0,.03,.2,0xf0f0f0],['k',.03,.07,.03,0,.02,.27,0xe0b030,1.5708],
+      ['b',.3,.02,.2,-.18,.03,0,0xe0e0e0,0,.25],['b',.3,.02,.2,.18,.03,0,0xe0e0e0,0,-.25],['b',.26,.02,.15,-.42,.1,-.03,0xc0c0c0,0,.5],['b',.26,.02,.15,.42,.1,-.03,0xc0c0c0,0,-.5],
+      ['b',.1,.02,.18,0,0,-.26,0xdcdcdc]],
     tint:[0xffffff,0xdddddd,0x888888],sz:[1,1.4],spd:7,cnt:[16,16,16],mode:'bird'}
 };
 function initAnimals(){
   const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.9});
   for(const name in SPEC_DEF){const def=SPEC_DEF[name];
     const mg=new Merger();BASE.identity();
-    for(const p of def.parts){const [t,w,h,d,x,y,z,col,rx,rz]=p;let g;if(t==='b')g=new THREE.BoxGeometry(w,h,d);else{g=new THREE.SphereGeometry(.5,8,6);g.scale(w,h,d)}put(mg,g,x,y,z,0,C(col),rx||0,rz||0)}
+    for(const p of def.parts){const [t,w,h,d,x,y,z,col,rx,rz]=p;let g;if(t==='b')g=new THREE.BoxGeometry(w,h,d);else if(t==='k')g=new THREE.ConeGeometry(.5,1,7).scale(w,h,d);else if(t==='c')g=new THREE.CylinderGeometry(.5,.5,1,10).scale(w,h,d);else{g=new THREE.SphereGeometry(.5,10,7);g.scale(w,h,d)}put(mg,g,x,y,z,0,C(col),rx||0,rz||0)}
     const geo=mg.mesh(mat).geometry,total=def.cnt[0]+def.cnt[1]+def.cnt[2];
     const m=new THREE.InstancedMesh(geo,mat,Math.max(1,total));m.frustumCulled=false;m.castShadow=name!=='bird'&&name!=='chicken'&&name!=='cat';scene.add(m);
     SPEC[name]={def,mesh:m,count:0};
@@ -3721,6 +3751,18 @@ function initAnimals(){
       m.setColorAt(i,_dc.set(pk(def.tint)));ANIMALS.push(a);i++}
     m.count=i;SPEC[name].count=i;if(m.instanceColor)m.instanceColor.needsUpdate=true;
   }
+  assignOwners();
+}
+
+const HERD={dog:[1,3.2],cat:[1,3.5],horse:[2,3.2],pig:[3,4],sheep:[5,4.5],cow:[3,4.5],chicken:[4,3.8]};
+function assignOwners(){
+  const pool=[[],[],[]];for(const n of NPCS)if(!n.stall&&n.h>.8)pool[n.cls].push(n);
+  const used=new Set(),take=cls=>{const p=pool[cls];if(!p.length)return null;for(let k=0;k<10;k++){const n=p[Math.floor(Math.random()*p.length)];if(!used.has(n)){used.add(n);return n}}return p[Math.floor(Math.random()*p.length)]};
+  for(const name in HERD){const [gs,lead]=HERD[name];
+    for(let cls=0;cls<3;cls++){const L=ANIMALS.filter(a=>a.sp===name&&a.cls===cls);
+      for(let k=0;k<L.length;k+=gs){const o=take(cls);if(!o)continue;
+        for(let j=k;j<Math.min(L.length,k+gs);j++){const a=L[j];a.owner=o;a.lead=lead;
+          for(let t=0;t<8;t++){const an=Math.random()*TAU,r=1.5+Math.random()*lead,x=o.x+Math.sin(an)*r,z=o.z+Math.cos(an)*r;if(freeSpot(x,z,.5)){a.x=x;a.z=z;a.tx=x;a.tz=z;break}}}}}}
 }
 function updateAnimals(dt){
   const pp=P.pos;
@@ -3739,14 +3781,23 @@ function updateAnimals(dt){
     let thr=null,td=1e9;for(const t of liveT){const q=Math.hypot(t.x-a.x,t.z-a.z);if(q<td){td=q;thr=t}}
     let moving=false,sp=0;
     const step=(vx,vz,s)=>{const l=Math.hypot(vx,vz)||1,nx=a.x+vx/l*s*dt,nz=a.z+vz/l*s*dt,r=Math.hypot(nx,nz);if(r<d.a-8||r>d.b+8||!freeSpot(nx,nz,.5))return false;a.x=nx;a.z=nz;a.yaw+=wrapPi(Math.atan2(vx,vz)-a.yaw)*Math.min(1,8*dt);moving=true;sp=s;return true};
+    let o=a.owner,od=1e9;
+    if(o&&!o.alive){a.owner=o=null;a.lostT=2}
+    if(o)od=Math.hypot(o.x-a.x,o.z-a.z);
+    else{a.lostT=(a.lostT||0)-dt;if(a.lostT<=0){a.lostT=4;let bq=70,bn=null;for(const n of NPCS){if(!n.alive||n.stall||n.h<.8||n.cls!==a.cls)continue;const q=Math.hypot(n.x-a.x,n.z-a.z);if(q<bq){bq=q;bn=n}}if(bn){a.owner=o=bn;od=bq;a.lead=a.lead||(HERD[a.sp]?HERD[a.sp][1]:4)}}}
+    const lead=o?((a.mode==='dog'&&dp<30)?14:a.lead):0;
     if(thr&&td<thr.H*2.4+26){step(a.x-thr.x,a.z-thr.z,a.spd*3.4)}
+    else if(o&&od>lead){
+      if(od>70&&dp>45){for(let t=0;t<6;t++){const an=Math.random()*TAU,x=o.x+Math.sin(an)*3,z=o.z+Math.cos(an)*3;if(freeSpot(x,z,.5)){a.x=x;a.z=z;break}}}
+      else step(o.x-a.x,o.z-a.z,Math.max(a.spd*(od>14?2.4:1.3),(o.spd||1)*1.25));
+      a.st='idle';a.t=.5+Math.random()}
     else if(a.mode==='dog'&&dp<30&&dp>4.5&&state!=='menu'){step(dx,dz,a.spd*2.6)}
     else if(a.mode==='dog'&&dp<=4.5){a.yaw+=wrapPi(Math.atan2(dx,dz)-a.yaw)*Math.min(1,5*dt)}
     else if(a.mode==='cat'&&dp<20){a.yaw+=wrapPi(Math.atan2(dx,dz)-a.yaw)*Math.min(1,4*dt)}
     else if(a.mode==='flee'&&dp<7){step(-dx,-dz,a.spd*3)}
     else if(a.mode==='face'&&dp<32){a.yaw+=wrapPi(Math.atan2(dx,dz)-a.yaw)*Math.min(1,2*dt)}
     else if(a.st==='walk'){const vx=a.tx-a.x,vz=a.tz-a.z;if(Math.hypot(vx,vz)<.7){a.st='idle';a.t=2+Math.random()*6}else if(!step(vx,vz,a.spd)){a.st='idle';a.t=1+Math.random()*2}}
-    else if(a.t<=0){const sp2=spotIn(a.cls);if(sp2){a.tx=a.x+clamp(sp2[0]-a.x,-22,22);a.tz=a.z+clamp(sp2[1]-a.z,-22,22);a.st='walk'}else a.t=3}
+    else if(a.t<=0){if(o){const an=Math.random()*TAU,r=Math.random()*lead*.9;a.tx=o.x+Math.sin(an)*r;a.tz=o.z+Math.cos(an)*r;a.st='walk';a.t=2}else{const sp2=spotIn(a.cls);if(sp2){a.tx=a.x+clamp(sp2[0]-a.x,-22,22);a.tz=a.z+clamp(sp2[1]-a.z,-22,22);a.st='walk'}else a.t=3}}
     a.phase+=moving?sp*dt*4:0;
     const bob=moving?Math.abs(Math.sin(a.phase))*.05*a.s:(a.sp==='chicken'&&Math.sin(time*2+a.i)>.7?-.02:0),pitch=moving?Math.sin(a.phase)*.07:(a.sp==='chicken'?Math.max(0,Math.sin(time*3+a.i*3))*.5:(a.mode==='dog'&&dp<=4.5?Math.sin(time*10+a.i)*.12:0));
     _dq.setFromEuler(_de.set(pitch,a.yaw,0,'YXZ'));_dm.compose(_dp.set(a.x,bob,a.z),_dq,_ds.set(a.s,a.s,a.s));m.setMatrixAt(a.i,_dm);
