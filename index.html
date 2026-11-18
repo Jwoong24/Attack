@@ -483,6 +483,7 @@ html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
     </dl>
     <div class="opts">
       <div class="opt"><label>조작</label><div class="seg" data-opt="assist"><button data-v="easy" aria-pressed="true">쉬움</button><button data-v="pro" aria-pressed="false">원래</button></div></div>
+      <div class="opt"><label>그래픽</label><div class="seg" data-opt="gfx"><button data-v="low" aria-pressed="false">낮음</button><button data-v="mid" aria-pressed="false">보통</button><button data-v="high" aria-pressed="true">높음</button></div></div>
       <div class="opt"><label>소리</label><div class="seg" data-opt="snd"><button data-v="on" aria-pressed="true">켬</button><button data-v="off" aria-pressed="false">끔</button></div></div>
     </div>
     <p id="glbMsg" class="note" style="margin:6px 0 0"></p>
@@ -2681,8 +2682,20 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{keys[e.code]=false});
 window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
 document.querySelectorAll('.opt .seg').forEach(seg=>seg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const o=seg.dataset.opt,v=b.dataset.v;
-  if(o==='view')setView(v==='third');if(o==='assist')setAssist(v==='easy');
+  if(o==='view')setView(v==='third');if(o==='assist')setAssist(v==='easy');if(o==='gfx')setQuality(v);
   if(o==='snd'){const on=v==='on';store.set('wmt-snd',on?'on':'off');audio.setOn(on);seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))}}));
+const QSET={low:{pr:1,sh:0,max:90},mid:{pr:1.3,sh:1024,max:IS_TOUCH?110:160},high:{pr:1.75,sh:2048,max:IS_TOUCH?160:270}};
+let QCUR='high';
+function setQuality(q,quiet){
+  if(!QSET[q])q='high';QCUR=q;const c=QSET[q];
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,c.pr));renderer.setSize(innerWidth,innerHeight,false);
+  sun.castShadow=c.sh>0;renderer.shadowMap.enabled=c.sh>0;
+  if(c.sh>0&&sun.shadow.mapSize.x!==c.sh){sun.shadow.mapSize.set(c.sh,c.sh);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+  TCFG.max=c.max;
+  scene.traverse(o=>{if(o.material){const m=o.material;if(Array.isArray(m))m.forEach(x=>x.needsUpdate=true);else m.needsUpdate=true}});
+  document.querySelectorAll('[data-opt="gfx"] button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===q)));
+  store.set('wmt-gfx',q);if(!quiet)toast('그래픽 · '+({low:'낮음',mid:'보통',high:'높음'})[q],1400);
+}
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();fx.width=innerWidth;fx.height=innerHeight;applyMenuLayout()});
 
 /* ---- touch controls ---- */
@@ -4128,24 +4141,40 @@ function seedTitans(){
 function barCanvas(){const c=document.createElement('canvas');c.width=128;c.height=16;return c}
 function updateBar(t){
   const c=t.barC,g=c.getContext('2d'),k=clamp(t.hp/t.maxHp,0,1),oy=c.height-16;g.clearRect(0,0,128,c.height);g.fillStyle='rgba(10,8,6,.8)';g.fillRect(0,oy,128,16);
-  g.fillStyle=t.colossal?(k>.5?'#ff5a1e':k>.25?'#ff3a1a':'#c81414'):t.abn?(k>.5?'#9b3cff':k>.25?'#d84ad0':'#ff3a8a'):k>.5?'#d9a03a':k>.25?'#e0743a':'#d23a2a';g.fillRect(2,oy+2,124*k,12);g.strokeStyle=t.colossal?'rgba(255,214,160,.95)':t.abn?'rgba(224,180,255,.95)':'rgba(240,230,200,.9)';g.lineWidth=1.5;g.strokeRect(.75,oy+.75,126.5,14.5);
-  if(t.abn||t.colossal){const lb=t.colossal?'🔥 초대형 거인':'☠ 기행종';g.font="700 15px 'Noto Sans KR','Malgun Gothic',sans-serif";g.textAlign='center';g.textBaseline='middle';g.lineWidth=4;g.strokeStyle='rgba(20,0,30,.95)';g.strokeText(lb,64,8);g.fillStyle=t.colossal?'#ffe2b8':'#f0d4ff';g.fillText(lb,64,8)}
+  g.fillStyle=t.elite?(k>.5?'#ff2a2a':k>.25?'#e01818':'#a80c0c'):t.colossal?(k>.5?'#ff5a1e':k>.25?'#ff3a1a':'#c81414'):t.abn?(k>.5?'#9b3cff':k>.25?'#d84ad0':'#ff3a8a'):k>.5?'#d9a03a':k>.25?'#e0743a':'#d23a2a';g.fillRect(2,oy+2,124*k,12);g.strokeStyle=t.elite?'rgba(255,90,70,.98)':t.colossal?'rgba(255,214,160,.95)':t.abn?'rgba(224,180,255,.95)':'rgba(240,230,200,.9)';g.lineWidth=1.5;g.strokeRect(.75,oy+.75,126.5,14.5);
+  if(t.abn||t.colossal||t.elite||t.crawl){const lb=t.elite?'⚔ 정예 거인':t.crawl?'🐾 기는 거인':t.colossal?'🔥 초대형 거인':'☠ 기행종';g.font="700 15px 'Noto Sans KR','Malgun Gothic',sans-serif";g.textAlign='center';g.textBaseline='middle';g.lineWidth=4;g.strokeStyle='rgba(20,0,30,.95)';g.strokeText(lb,64,8);g.fillStyle=t.elite?'#ff4a3a':t.crawl?'#ffc070':t.colossal?'#ffe2b8':'#f0d4ff';g.fillText(lb,64,8)}
   t.barTex.needsUpdate=true;
+}
+const AURA_SH=new THREE.ShaderMaterial({transparent:true,side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{tm:{value:0},thick:{value:.45},enr:{value:0}},
+  vertexShader:'uniform float thick;varying vec3 vP;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vec3 vn=normalize(normalMatrix*normal);mv.xyz+=vn*thick;vP=(modelMatrix*vec4(position,1.)).xyz;gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'uniform float tm,enr;varying vec3 vP;void main(){float w=.5+.5*sin(vP.y*1.3-tm*5.+sin(vP.x*.7+tm*2.)*2.);float f=.45+.55*w;vec3 a=mix(vec3(.85,.04,.02),vec3(1.,.32,.02),w),b=mix(vec3(1.,.45,.02),vec3(1.,.85,.1),w);vec3 c=mix(a,b,enr);gl_FragColor=vec4(c*(.7+.5*f),.92);}'});
+const AURA_RG=new THREE.RingGeometry(.55,1,48);
+function addAura(t){
+  const ms=[];t.root.traverse(o=>{if(o.isMesh&&o.geometry&&!o.userData.noAura)ms.push(o)});
+  t.auraM=AURA_SH.clone();t.auraM.uniforms.thick.value=Math.max(.4,t.H*.034);t.auraMs=[];
+  for(const m of ms){const a=new THREE.Mesh(m.geometry,t.auraM);a.renderOrder=4;a.frustumCulled=false;m.add(a);t.auraMs.push(a)}
+  const rm=new THREE.MeshBasicMaterial({color:0xd01a06,transparent:true,opacity:.6,depthWrite:false,side:THREE.DoubleSide,fog:false});
+  const rg=new THREE.Mesh(AURA_RG,rm);rg.rotation.x=-Math.PI/2;rg.position.y=.25;rg.scale.setScalar(t.H*.62);rg.renderOrder=3;t.root.add(rg);t.auraRing=rg;
 }
 function spawnTitan(x,z,H,drop,quiet,vOv){
   const alive=TITANS.filter(t=>t.st!=='dead');if(alive.length>=TCFG.max)removeTitan(alive[0]);
+  const rand=!H&&vOv==null&&!drop;let kind=null;
+  if(rand){const r=TCFG.force!=null?TCFG.force:Math.random();if(r<.07){kind='elite';H=14+Math.random()*8}else if(r<.19){kind='crawl';H=5.5+Math.random()*2.6}}
   H=H||(6.5+Math.pow(Math.random(),1.25)*16.5);
   const v=vOv!=null?vOv:Math.floor(Math.random()*6),m=makeTitan(H,v);
   const runner=H<10&&Math.random()<.2;
   const t=Object.assign(m,{x,z,y:0,yaw:Math.random()*TAU,H,v,rad:H*.15+.6,maxHp:Math.round(40+H*9),st:'walk',phase:Math.random()*6,spd:clamp(10-H*.42+Math.random()*2,3,9.5)*(runner?1.9:1),
     chaser:Math.random()<.82,town:Math.random()<.4,style:runner?1:Math.floor(Math.random()*3),goal:null,think:0,cd:1,atk:null,flinch:0,dead:0,lastSeq:-1,aggro:false,fall:Math.random()<.5?-1:1,age:0,tr:0,eatT:0,trampT:0});
+  if(kind==='elite'){t.elite=true;t.maxHp=Math.round(t.maxHp*3.6);t.spd*=1.15;t.dmgMul=1.5;t.chaser=true;t.town=false;t.style=0;
+    addAura(t)}
+  if(kind==='crawl'){t.crawl=true;t.spd=clamp(t.spd*2.4,9,16);t.chaser=true;t.maxHp=Math.round(t.maxHp*.9);t.root.scale.set(1.18,.66,1.3)}
   t.hp=t.maxHp;
   if(drop){t.air=true;t.vy=-22;t.y=terrY(x,z)+190}
   t.root.position.set(x,t.y,z);scene.add(t.root);
   t.barC=barCanvas();t.barTex=new THREE.CanvasTexture(t.barC);t.bar=new THREE.Sprite(new THREE.SpriteMaterial({map:t.barTex,transparent:true,depthWrite:false,fog:false}));
-  t.bar.scale.set(Math.max(3.2,H*.7),Math.max(.4,H*.085),1);scene.add(t.bar);updateBar(t);
+  t.bar.scale.set(Math.max(3.2,H*.7)*(t.elite?1.35:1),Math.max(.4,H*.085)*(t.elite?1.5:1),1);scene.add(t.bar);updateBar(t);
   t.tg=[['chest',.62,.3],['legs',.25,.24],['head',.9,.17]].map(([part,hf,rf])=>{const o={pos:new V3(),part,hf,rf,r:H*rf,onHit(info){hitTitan(t,info,part)}};TARGETS.push(o);return o});
-  {const o={pos:new V3(),part:'nape',r:H*.15,valid(){const fx=Math.sin(t.yaw),fz=Math.cos(t.yaw),px=P.pos.x-t.x,pz=P.pos.z-t.z,pl=Math.hypot(px,pz)||1;return (fx*px+fz*pz)/pl<(ATK.sk?.6:.12)&&P.pos.y>t.y+t.H*(ATK.sk?.55:.45)},onHit(info){hitTitan(t,info,'nape')}};TARGETS.unshift(o);t.tg.push(o)}
+  {const o={pos:new V3(),part:'nape',r:H*.15,valid(){const fx=Math.sin(t.yaw),fz=Math.cos(t.yaw),px=P.pos.x-t.x,pz=P.pos.z-t.z,pl=Math.hypot(px,pz)||1;return (fx*px+fz*pz)/pl<(ATK.sk?.6:.12)&&P.pos.y>t.y+t.H*(t.crawl?.3:ATK.sk?.55:.45)},onHit(info){hitTitan(t,info,'nape')}};TARGETS.unshift(o);t.tg.push(o)}
   TITANS.push(t);
   if(!drop&&!quiet)for(let i=0;i<16;i++){const a=i/16*TAU;puff(_a.set(x+Math.sin(a)*H*.5,1,z+Math.cos(a)*H*.5),_b.set(Math.sin(a)*4,2+Math.random()*2,Math.cos(a)*4),H*.45,1.8,0xcdbd9a)}
   return t;
@@ -4165,15 +4194,17 @@ function hitTitan(t,info,part){
   if(part==='nape'){dmg*=3.4;if(time-(TCFG.lastNape||-9)>1.2){TCFG.lastNape=time;toast('급소! 목 뒷덜미 명중 ×3',1200)}
     for(let i=0;i<5;i++)puff(_a.set(t.x-fx*t.H*.1,t.y+t.H*.84,t.z-fz*t.H*.1),_b.set((Math.random()-.5)*4,1+Math.random()*3,(Math.random()-.5)*4),t.H*.16,.9,0xc8402a)}
   else{if((fx*px+fz*pz)/pl<-.25)dmg*=1.5;if(part==='head')dmg*=1.25}
-  t.hp-=dmg;t.flinch=.35;t.aggro=true;t.cd=Math.max(t.cd,.5);
-  t.x-=info.dir.x*.15*t.H*.1;t.z-=info.dir.z*.15*t.H*.1;
+  if(t.elite&&part!=='nape')dmg*=.5;
+  t.hp-=dmg;t.flinch=t.elite?.08:.35;t.aggro=true;
+  if(t.elite&&!t.enr&&t.hp<t.maxHp*.5){t.enr=1;t.spd*=1.3;t.auraM.uniforms.enr.value=1;toast('정예 거인이 격노했다! 움직임이 빨라진다',2200)}t.cd=Math.max(t.cd,.5);
+  if(!t.elite){t.x-=info.dir.x*.15*t.H*.1;t.z-=info.dir.z*.15*t.H*.1}
   for(let i=0;i<3;i++)puff(_a.set(P.pos.x+(Math.random()-.5),P.pos.y+1,P.pos.z+(Math.random()-.5)),_b.set((Math.random()-.5)*3,1+Math.random()*2,(Math.random()-.5)*3),.7,.7,0xe8dcc8);
   updateBar(t);if(t.hp<=0)killTitan(t);
 }
 function killTitan(t){
   t.st='dead';t.dead=0;t.atk=null;KILLS.n++;if(t.home)RESP.push({home:t.home,at:RESPT+50+Math.random()*50});t.bar.visible=false;
   for(const o of t.tg){const i=TARGETS.indexOf(o);if(i>=0)TARGETS.splice(i,1)}
-  {const gd=Math.round(12+t.H*2.2);P.gold+=gd;toast('거인 처치! · 누적 '+KILLS.n+' · +'+gd+'G',1800);audio.sfx('kill',.8);setTimeout(()=>audio.sfx('coin'),600)}hitShake=Math.max(hitShake,.12);questKill(t);
+  {const gd=Math.round((12+t.H*2.2)*(t.elite?7:t.crawl?1.5:1));P.gold+=gd;if(t.elite){if(t.auraMs)t.auraMs.forEach(a=>a.visible=false);if(t.auraRing)t.auraRing.visible=false;toast('⚔ 정예 거인 처치! · +'+gd+'G',3000)}else toast('거인 처치! · 누적 '+KILLS.n+' · +'+gd+'G',1800);audio.sfx('kill',.8);setTimeout(()=>audio.sfx('coin'),600)}hitShake=Math.max(hitShake,.12);questKill(t);
 }
 /* ---- helpers ---- */
 const terrY=(x,z)=>Math.hypot(x,z)<=OUTER+2?0:Math.max(-.5,terrainH(x,z));
@@ -4306,7 +4337,7 @@ function strikeResolve(t,a){
   }
   const dx=P.pos.x-c.x,dy=P.pos.y+1.0-c.y,dz=P.pos.z-c.z;
   if(state==='play'&&(Math.hypot(dx,dy,dz)<c.r+.6||(P.pos.y-t.y<t.H*.3&&Math.hypot(P.pos.x-t.x,P.pos.z-t.z)<t.rad+.9))){
-    const dmg=Math.min(t.dmgCap||1e9,Math.round(12+t.H*1.3)*(a.kind==='grab'?1.25:1)),l=Math.hypot(dx,dz)||1;
+    const dmg=Math.min(t.dmgCap||1e9,Math.round((12+t.H*1.3)*(t.dmgMul||1)*(t.crawl?.7:1))*(a.kind==='grab'?1.25:1)),l=Math.hypot(dx,dz)||1;
     audio.sfx('tHit');damagePlayer(dmg,dx/l,dz/l,a.kind==='grab'?22:14);
   }
   if(a.kind==='smash'||a.kind==='stomp'){const d=Math.hypot(P.pos.x-t.x,P.pos.z-t.z);if(d<t.H*3.5){hitShake=Math.max(hitShake,.14*Math.pow(1-d/(t.H*3.5),2));}for(let i=0;i<6;i++)puff(_a.set(c.x+(Math.random()-.5)*t.H*.3,t.y+.3,c.z+(Math.random()-.5)*t.H*.3),_b.set((Math.random()-.5)*5,1+Math.random()*2,(Math.random()-.5)*5),t.H*.2,1.2,0xc9b894)}
@@ -4364,10 +4395,11 @@ function poseTitan(t,dt,moving,spdNow){
 function syncTitan(t){
   t.root.position.set(t.x,t.y,t.z);t.root.rotation.y=t.yaw;
   const fx=Math.sin(t.yaw),fz=Math.cos(t.yaw),H=t.H;
-  t.tg[0].pos.set(t.x,t.y+H*.62,t.z);t.tg[1].pos.set(t.x,t.y+H*.25,t.z);
-  t.tg[2].pos.set(t.x+fx*H*.05,t.y+H*.9,t.z+fz*H*.05);
-  t.tg[3].pos.set(t.x-fx*H*.09,t.y+H*.84,t.z-fz*H*.09);
-  t.bar.position.set(t.x,t.y+H*1.2,t.z);
+  const hy=t.crawl?.66:1;
+  t.tg[0].pos.set(t.x,t.y+H*.62*hy,t.z);t.tg[1].pos.set(t.x,t.y+H*.25*hy,t.z);
+  t.tg[2].pos.set(t.x+fx*H*.05,t.y+H*.9*hy,t.z+fz*H*.05);
+  t.tg[3].pos.set(t.x-fx*H*.09,t.y+H*.84*hy,t.z-fz*H*.09);
+  t.bar.position.set(t.x,t.y+H*1.2*hy+(t.elite?H*.12:0),t.z);
 }
 function updateTitan(t,dt){
   t.age+=dt;
@@ -4388,6 +4420,9 @@ function updateTitan(t,dt){
   if(t.flinch>0)t.flinch-=dt;if(t.cd>0)t.cd-=dt;if(t.eatT>0)t.eatT-=dt;
   t.think-=dt;
   const zone=ZONE(Math.hypot(t.x,t.z));
+  if(t.elite&&t.auraM){t.auraM.uniforms.tm.value=time;if(t.auraRing){const k=1+.08*Math.sin(time*4);t.auraRing.scale.setScalar(t.H*.62*k);t.auraRing.rotation.z=time*.8}}
+  if(t.elite){if(!t.ann&&play&&dp<260){t.ann=1;toast('⚠ 붉은 아우라를 두른 정예 거인이다! 몸통은 단단하니 목덜미를 노려라',3600)}
+    if(dp<320&&Math.random()<dt*16)puff(_a.set(t.x+(Math.random()-.5)*t.H*.5,t.y+t.H*(.05+Math.random()*.95),t.z+(Math.random()-.5)*t.H*.5),_b.set((Math.random()-.5)*2.5,4+Math.random()*5,(Math.random()-.5)*2.5),t.H*.12,1.3,t.enr?0xffc040:Math.random()<.5?0xff5a1a:0xff2a10)}
   if(t.think<=0){
     t.think=.35+Math.random()*.25;
     const sr=(t.chaser?150+t.H*7:55)+(t.aggro?70:0),chasing=t.goal&&t.goal.k==='player';
@@ -4429,7 +4464,7 @@ function updateTitan(t,dt){
       const near=g.k==='player'&&dist<H*.6;
       if(!near||true){
         const wp=waypoint(t,gp[0],gp[1]),tx=wp[0]-t.x,tz=wp[1]-t.z,want=Math.atan2(tx,tz),dy=wrapPi(want-t.yaw);
-        t.yaw+=clamp(dy,-2.3*dt,2.3*dt);
+        t.yaw+=clamp(dy,-2.3*dt,2.3*dt)+(t.crawl&&g.k==='player'&&dist>t.H*1.2?Math.sin(t.age*4.5+t.phase)*1.4*dt:0);
         const sp=t.spd*((g.k==='wander'||g.k==='town')?.55:1)*Math.max(.2,1-Math.abs(dy)/1.7)*(near?.35:1);
         t.x+=Math.sin(t.yaw)*sp*dt;t.z+=Math.cos(t.yaw)*sp*dt;moving=sp>.4;spdNow=sp;
       }
@@ -5792,7 +5827,7 @@ function storyIntro(){
 }
 
 function initLife(){initDebris();initTitanMats();initPeople();initAnimals();initServices();initZoneLife();initStory();initUIx();initSoldiers();seedTitans();
-  window.SIM.dbg={DAY,updateDay,isNight,innRest,glbLoad,glbApply,GLBC,stepPhysics,terrainH,inSea,SEA,spawnKraken,updateSea,ferryAsk,ferryGo,ferryDock,FERRY,setPos,factOpen,FACT,qTarget,portVoyage,spawnCol,colTick,wallBreach,spawnAbn,updateTitan,colliders,SOLD,NPCS,updatePeople,camera,scene,renderer,loadStory,saveStory,ST,QD,QDID,qProg,openCasino,LB,QT,TITANS,TCFG,WALLS,DISPLAY,rallyAttack,gateAuto,toggleGate,damagePlayer,openSmith,openDice,renderDice,dzRoll,DZ,wMul,wCost,wRate,qtTick,storyKill,updateHorses,updateInteract,QUEST,ITEMS,NPCNAME,POTS,PICK,bagAdd,bagN,openBag,openGear,openTrainer,storyKill,svcM,storyMarks,updateStory,recalc,qReady,qTarget,QQ,openQueen,queenKill,SVC,HM,SPOTS,QUEST,UGX,TZ0,TZ1,CZ,BUNK,warp,warpTick,setPos,tryRevive,reviveTick,startLearn,learnTick,storyIntro,qAccept,qComplete,reqOK,GUIDE,updateGuide,guidePath,damagePlayer,stepPhysics,updateInteract,openQuest,openSmith,openCasino,groundY,hooks,P,beginAttack,updateAttack,ATK,rallyAttack,ALARM,openAlarm,BLD,ROSE_STALLS,shakeAt,graceOn,openRecruit,SOLD,FBLD,GROUPS,FAC,EMB,setEmblem,spill,updateSoldiers,updateFactions,castleFall,soldierStrike,quadRaw,regionAt,glbFacing,glbLoad,GLBC,soldier,armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
+  window.SIM.dbg={spawnTitan,TCFG,setQuality,TITANS,DAY,updateDay,isNight,innRest,glbLoad,glbApply,GLBC,stepPhysics,terrainH,inSea,SEA,spawnKraken,updateSea,ferryAsk,ferryGo,ferryDock,FERRY,setPos,factOpen,FACT,qTarget,portVoyage,spawnCol,colTick,wallBreach,spawnAbn,updateTitan,colliders,SOLD,NPCS,updatePeople,camera,scene,renderer,loadStory,saveStory,ST,QD,QDID,qProg,openCasino,LB,QT,TITANS,TCFG,WALLS,DISPLAY,rallyAttack,gateAuto,toggleGate,damagePlayer,openSmith,openDice,renderDice,dzRoll,DZ,wMul,wCost,wRate,qtTick,storyKill,updateHorses,updateInteract,QUEST,ITEMS,NPCNAME,POTS,PICK,bagAdd,bagN,openBag,openGear,openTrainer,storyKill,svcM,storyMarks,updateStory,recalc,qReady,qTarget,QQ,openQueen,queenKill,SVC,HM,SPOTS,QUEST,UGX,TZ0,TZ1,CZ,BUNK,warp,warpTick,setPos,tryRevive,reviveTick,startLearn,learnTick,storyIntro,qAccept,qComplete,reqOK,GUIDE,updateGuide,guidePath,damagePlayer,stepPhysics,updateInteract,openQuest,openSmith,openCasino,groundY,hooks,P,beginAttack,updateAttack,ATK,rallyAttack,ALARM,openAlarm,BLD,ROSE_STALLS,shakeAt,graceOn,openRecruit,SOLD,FBLD,GROUPS,FAC,EMB,setEmblem,spill,updateSoldiers,updateFactions,castleFall,soldierStrike,quadRaw,regionAt,glbFacing,glbLoad,GLBC,soldier,armIK,damageGate,gateBlock,ANIMALS,WALLS,toggleGate,repairGate,titanHand,RESP,zonePoint,doGreet,greetNearby,SVC,HORSES,DISPLAY,POTS,giveHorse,usePot,dismountHorse,mountHorse,openService,closePanel,innRest,horseHit,horseDrive,updateHorses,updateServices,updateRide,updateInteract,updateExtra,seedTitans,rayTitans,assistAnchor,TARGETS,ATK,hooks,startAtk,fireHook,updateHooks,strikeCenter,hitTitan,TITANS,NPCS,ANIMALS,BLD,LAMPS,spawnTitan,clearTitans,destroyBuilding,damagePlayer,WALLS,P,KILLS,factoryPress,destroyLamp,FACT,updateTitans,updatePeople,updateAnimals,updateDebris,updateFactory,updateHud,flushDirty,groundY,terrainH,get state(){return state},set state(v){state=v},get time(){return time}}}
 
 
 /* ================== v18 · FACTIONS (emblems, halls, soldiers, castle, HP bars) ================== */
@@ -6638,7 +6673,7 @@ const _fm=new THREE.Matrix4();
   buildTerrain();WALLS.forEach(buildWall);buildTown();buildPlaza();buildFactions();ROSE_SVC=buildRoseServices();buildAlertPost(-96,652);buildMariaZones();buildSeaDebris();BUNK.forEach(buildBunker);buildTunnel(UGX,{id:'tun',t0:'▲ 월 시나 방면 출구',t1:'▲ 월 로제 방면 출구',n0:'월 시나 쪽',n1:'월 로제 쪽',ex:[0,1],key:true});buildTunnel(UGX+40,{id:'tunM',t0:'▲ 월 마리아 방면 출구',t1:'▲ 월 로제 방면 출구',n0:'월 마리아 쪽',n1:'월 로제 쪽',ex:[2,3],key:false});buildCellar();buildHomeInside();buildCastleInside();buildRoseMarket();buildForest();buildRoad();buildDesert();buildHarbor();buildFactory();buildNightFx();buildStreets();
   for(const k of ['plaster','stone','roof','wood','winD','winL','door','banner','prop','lantern','foliage','clock','metal','concrete']){if(MG[k].n)scene.add(MG[k].mesh(MAT[k],k!=='winD'&&k!=='winL'&&k!=='lantern'))}
   buildMinimap();initLife();$('#retryBtn').addEventListener('click',restartAfterDeath);
-  updateDay(0,true);
+  updateDay(0,true);setQuality(store.get('wmt-gfx',IS_TOUCH?'mid':'high'),true);
   setView(true);setAssist(store.get('wmt-assist','easy')==='easy');
   const snd=store.get('wmt-snd','on')==='on';audio.setOn(snd);document.querySelectorAll('[data-opt="snd"] button').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.v==='on')===snd)));
   CLOAK_ID=store.get('wmt-cloak','auto');setEmblem(store.get('wmt-emb','train'),true);
